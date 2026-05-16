@@ -66,7 +66,7 @@ export const updateIssue = async (req: Request, res: Response) => {
 
   try {
     const issue = await prisma.issue.update({
-      where: { id },
+      where: { id: id as string },
       data: {
         ...(status && { status }),
         ...(priority && { priority }),

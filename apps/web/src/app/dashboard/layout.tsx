@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package } from "lucide-react";
 import { api } from "@/lib/api";
-import { NotificationBell } from "../../components/NotificationBell";
+import { NotificationBell } from "@/app/components/NotificationBell";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();

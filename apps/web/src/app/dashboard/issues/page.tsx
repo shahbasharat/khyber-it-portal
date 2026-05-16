@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { AlertCircle, Clock, CheckCircle, ArrowUpCircle, Plus, Loader2 } from "lucide-react";
-import { Modal } from "../../components/Modal";
+import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CreateIssueSchema, CreateIssueInput } from "@khyber/schemas";

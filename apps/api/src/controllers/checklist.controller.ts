@@ -58,7 +58,7 @@ export const toggleChecklistItem = async (req: any, res: Response) => {
     // Find or create response for today
     const existingResponse = await prisma.checklistResponse.findFirst({
       where: {
-        checklistItemId: itemId,
+        checklistItemId: itemId as string,
         createdAt: {
           gte: start,
           lte: end,
