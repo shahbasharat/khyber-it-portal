@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth.middleware";
 const router = Router();
 
 router.get("/summary", requireAuth, reportController.getShiftSummary);
+router.post("/test-weekly", requireAuth, reportController.sendTestWeeklyReport);
 router.post("/", requireAuth, reportController.createShiftReport);
 
 export default router;

@@ -14,6 +14,8 @@ import reportRoutes from "./routes/report.routes";
 import notificationRoutes from "./routes/notification.routes";
 import activityRoutes from "./routes/activity.routes";
 import serverRoomRoutes from "./routes/serverRoom.routes";
+import guestWifiRoutes from "./routes/guestWifi.routes";
+import { initCronJobs } from "./jobs/cron";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -64,6 +66,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/server-room", serverRoomRoutes);
+app.use("/api/guest-wifi", guestWifiRoutes);
 
 // Health Check Endpoint
 app.get("/health", async (req, res) => {
@@ -91,4 +94,5 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Start Server
 app.listen(PORT, () => {
   logger.info(`🚀 API Server running on port ${PORT}`);
+  initCronJobs(); // Initialize scheduled tasks
 });

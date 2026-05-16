@@ -5,6 +5,6 @@ import { requireAuth } from "../middleware/auth.middleware";
 const router = Router();
 
 router.get("/today", requireAuth, checklistController.getDailyChecklist);
-router.post("/toggle/:itemId", requireAuth, checklistController.toggleChecklistItem);
+router.post("/update/:itemId", requireAuth, checklistController.updateChecklistItem);
 
 export default router;

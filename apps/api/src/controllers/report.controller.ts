@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
+import * as reportingService from "../services/reporting.service";
 
 export const getShiftSummary = async (req: Request, res: Response) => {
   const today = new Date();
@@ -76,5 +77,21 @@ export const createShiftReport = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error({ error }, "Failed to create shift report");
     res.status(500).json({ error: "Failed to create shift report" });
+  }
+};
+
+export const sendTestWeeklyReport = async (req: Request, res: Response) => {
+  try {
+    const pdfBuffer = await reportingService.generateWeeklySummary();
+    const result = await reportingService.sendWeeklyReportEmail(pdfBuffer as Buffer);
+    
+    if (result.success) {
+      res.json({ message: "Test report sent successfully", data: result.data });
+    } else {
+      res.status(500).json({ error: "Failed to send test report", details: result.error });
+    }
+  } catch (error) {
+    logger.error({ error }, "Error in test report route");
+    res.status(500).json({ error: "Failed to generate test report" });
   }
 };

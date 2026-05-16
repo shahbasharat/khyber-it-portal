@@ -119,6 +119,7 @@ model ChecklistResponse {
   shiftId         String?
   shift           Shift?   @relation(fields: [shiftId], references: [id])
   completed       Boolean  @default(false)
+  remarks         String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -155,6 +156,18 @@ model ServerRoomLog {
   userName  String
   reason    String
   createdAt DateTime @default(now())
+}
+
+model GuestWifiCode {
+  id          String   @id @default(uuid())
+  fromDate    DateTime
+  toDate      DateTime
+  accessCode  String
+  deviceLimit Int
+  plan        String
+  issuedTo    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum EscalationStatus {

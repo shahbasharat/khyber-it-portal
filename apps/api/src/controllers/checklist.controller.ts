@@ -34,6 +34,7 @@ export const getDailyChecklist = async (req: any, res: Response) => {
         category: item.category,
         description: item.description,
         completed: !!response?.completed,
+        remarks: response?.remarks || "",
         completedBy: response?.user?.name || null,
         completedAt: response?.createdAt || null,
       };
@@ -45,9 +46,9 @@ export const getDailyChecklist = async (req: any, res: Response) => {
   }
 };
 
-export const toggleChecklistItem = async (req: any, res: Response) => {
+export const updateChecklistItem = async (req: any, res: Response) => {
   const { itemId } = req.params;
-  const { completed } = req.body;
+  const { completed, remarks } = req.body;
   const userId = req.user.userId;
 
   const today = new Date();
@@ -69,7 +70,11 @@ export const toggleChecklistItem = async (req: any, res: Response) => {
     if (existingResponse) {
       const updated = await prisma.checklistResponse.update({
         where: { id: existingResponse.id },
-        data: { completed, userId },
+        data: { 
+          ...(completed !== undefined && { completed }),
+          ...(remarks !== undefined && { remarks }),
+          userId 
+        },
       });
       return res.json(updated);
     }
@@ -78,7 +83,8 @@ export const toggleChecklistItem = async (req: any, res: Response) => {
       data: {
         checklistItemId: itemId,
         userId,
-        completed,
+        completed: completed || false,
+        remarks: remarks || "",
       },
     });
 
