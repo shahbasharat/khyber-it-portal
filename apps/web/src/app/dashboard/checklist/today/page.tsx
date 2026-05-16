@@ -1,26 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
-import { CheckSquare, Square, ClipboardList, Loader2 } from "lucide-react";
+import { CheckSquare, Square, ClipboardList, Loader2, Wifi, Plus } from "lucide-react";
+import { Modal } from "@/app/components/Modal";
+import { useForm } from "react-hook-form";
+import debounce from "lodash/debounce";
 
 interface ChecklistItem {
   id: string;
   title: string;
   category: string;
   completed: boolean;
+  remarks: string;
   completedBy: string | null;
   completedAt: string | null;
 }
 
+interface WifiCode {
+  id: string;
+  fromDate: string;
+  toDate: string;
+  accessCode: string;
+  deviceLimit: number;
+  plan: string;
+  issuedTo: string;
+}
+
+interface WifiFormData {
+  fromDate: string;
+  toDate: string;
+  accessCode: string;
+  deviceLimit: number;
+  plan: string;
+  issuedTo: string;
+}
+
 export default function ChecklistPage() {
   const [items, setItems] = useState<ChecklistItem[]>([]);
+  const [wifiCodes, setWifiCodes] = useState<WifiCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [isWifiModalOpen, setIsWifiModalOpen] = useState(false);
+  const [isSubmittingWifi, setIsSubmittingWifi] = useState(false);
 
-  useEffect(() => {
-    fetchChecklist();
-  }, []);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<WifiFormData>();
 
   const fetchChecklist = async () => {
     try {
@@ -28,16 +52,31 @@ export default function ChecklistPage() {
       setItems(response.data);
     } catch (error) {
       console.error("Failed to fetch checklist", error);
-    } finally {
-      setLoading(false);
     }
   };
+
+  const fetchWifiCodes = async () => {
+    try {
+      const response = await api.get("/guest-wifi");
+      setWifiCodes(response.data);
+    } catch (error) {
+      console.error("Failed to fetch wifi codes", error);
+    }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      await Promise.all([fetchChecklist(), fetchWifiCodes()]);
+      setLoading(false);
+    };
+    init();
+  }, []);
 
   const handleToggle = async (itemId: string, currentStatus: boolean) => {
     setToggling(itemId);
     try {
-      await api.post(`/checklist/toggle/${itemId}`, { completed: !currentStatus });
-      await fetchChecklist(); // Refresh to get latest state
+      await api.post(`/checklist/update/${itemId}`, { completed: !currentStatus });
+      fetchChecklist();
     } catch (error) {
       console.error("Failed to toggle item", error);
     } finally {
@@ -45,21 +84,50 @@ export default function ChecklistPage() {
     }
   };
 
-  const completedCount = items.filter(i => i.completed).length;
-  const progressPercent = items.length > 0 ? (completedCount / items.length) * 100 : 0;
+  const debouncedUpdateRemarks = useCallback(
+    debounce(async (itemId: string, remarks: string) => {
+      try {
+        await api.post(`/checklist/update/${itemId}`, { remarks });
+      } catch (error) {
+        console.error("Failed to update remarks", error);
+      }
+    }, 1000),
+    []
+  );
+
+  const handleRemarksChange = (itemId: string, val: string) => {
+    setItems(prev => prev.map(item => item.id === itemId ? { ...item, remarks: val } : item));
+    debouncedUpdateRemarks(itemId, val);
+  };
+
+  const onWifiSubmit = async (data: WifiFormData) => {
+    setIsSubmittingWifi(true);
+    try {
+      await api.post("/guest-wifi", { ...data, deviceLimit: Number(data.deviceLimit) });
+      setIsWifiModalOpen(false);
+      reset();
+      fetchWifiCodes();
+    } catch (error) {
+      console.error("Failed to save wifi code", error);
+    } finally {
+      setIsSubmittingWifi(false);
+    }
+  };
 
   if (loading) {
     return <div className="flex justify-center items-center h-64 text-slate-mid">
-      <Loader2 className="animate-spin mr-2" /> Loading Daily Checklist...
+      <Loader2 className="animate-spin mr-2" /> Loading Operational Data...
     </div>;
   }
 
-  // Group by category
+  const completedCount = items.filter(i => i.completed).length;
+  const progressPercent = items.length > 0 ? (completedCount / items.length) * 100 : 0;
   const categories = Array.from(new Set(items.map(i => i.category)));
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-      <div className="bg-white p-6 rounded-2xl shadow-base border border-slate-border/50 sticky top-20 z-10">
+    <div className="flex flex-col gap-8 max-w-6xl mx-auto">
+      {/* Header & Progress */}
+      <div className="bg-white p-6 rounded-2xl shadow-base border border-slate-border/50 sticky top-16 z-20">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-dark font-display">Daily Operations Checklist</h2>
@@ -78,56 +146,156 @@ export default function ChecklistPage() {
         </div>
       </div>
 
-      <div className="space-y-8">
-        {categories.map(category => (
-          <div key={category} className="space-y-3">
-            <h3 className="text-xs font-bold text-slate-mid uppercase tracking-widest px-2">{category}</h3>
-            <div className="grid grid-cols-1 gap-2">
-              {items.filter(i => i.category === category).map(item => (
-                <div 
-                  key={item.id}
-                  onClick={() => !toggling && handleToggle(item.id, item.completed)}
-                  className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
-                    item.completed 
-                      ? "bg-fir-green-subtle border-fir-green/20 text-fir-green" 
-                      : "bg-white border-slate-border/50 text-slate-dark hover:border-fir-green/30"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    {toggling === item.id ? (
-                      <Loader2 size={24} className="animate-spin text-slate-mid" />
-                    ) : item.completed ? (
-                      <div className="bg-fir-green text-white rounded-md p-0.5">
-                        <CheckSquare size={20} />
-                      </div>
-                    ) : (
-                      <Square size={24} className="text-slate-mid" />
-                    )}
-                    <div>
-                      <span className={`font-medium ${item.completed ? "line-through opacity-70" : ""}`}>
+      {/* Checklist Table */}
+      <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-fir-green text-white">
+              <th className="p-4 text-sm font-bold uppercase tracking-wider w-12 text-center">Done</th>
+              <th className="p-4 text-sm font-bold uppercase tracking-wider w-1/3">Description</th>
+              <th className="p-4 text-sm font-bold uppercase tracking-wider">Remarks</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-border/30">
+            {categories.map(category => (
+              <tr key={category} className="bg-cream/50">
+                <td colSpan={3} className="p-2 px-4 text-[10px] font-black text-slate-mid uppercase tracking-[0.2em]">
+                  {category}
+                </td>
+              </tr>
+            ).concat(
+              items.filter(i => i.category === category).map(item => (
+                <tr key={item.id} className="hover:bg-cream/20 transition-colors">
+                  <td className="p-4 text-center">
+                    <button 
+                      onClick={() => !toggling && handleToggle(item.id, item.completed)}
+                      disabled={toggling === item.id}
+                      className="inline-flex items-center justify-center transition-transform active:scale-90"
+                    >
+                      {toggling === item.id ? (
+                        <Loader2 size={24} className="animate-spin text-slate-mid" />
+                      ) : item.completed ? (
+                        <CheckSquare size={24} className="text-fir-green" />
+                      ) : (
+                        <Square size={24} className="text-slate-mid hover:text-fir-green transition-colors" />
+                      )}
+                    </button>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                      <span className={`font-semibold text-slate-dark ${item.completed ? "line-through opacity-50" : ""}`}>
                         {item.title}
                       </span>
                       {item.completed && item.completedBy && (
-                        <p className="text-[10px] opacity-70">
-                          Checked by {item.completedBy} at {new Date(item.completedAt!).toLocaleTimeString()}
-                        </p>
+                        <span className="text-[10px] text-slate-mid">
+                          Checked by {item.completedBy.split(" ")[0]} at {new Date(item.completedAt!).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                        </span>
                       )}
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+                  </td>
+                  <td className="p-4">
+                    <input 
+                      type="text"
+                      value={item.remarks}
+                      onChange={(e) => handleRemarksChange(item.id, e.target.value)}
+                      placeholder="Enter remarks..."
+                      className="w-full p-2 bg-transparent border-b border-dashed border-slate-border/50 focus:border-fir-green focus:ring-0 outline-none text-sm text-slate-dark transition-all"
+                    />
+                  </td>
+                </tr>
+              ))
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {progressPercent === 100 && (
-        <div className="bg-fir-green p-6 rounded-2xl text-white text-center shadow-lg animate-in fade-in zoom-in duration-500">
-          <ClipboardList className="mx-auto mb-2" size={32} />
-          <h3 className="text-xl font-bold">Morning Checklist Complete ✓</h3>
-          <p className="text-white/80 text-sm">Excellent work! All routine checks have been recorded.</p>
+      {/* Guest Wi-Fi Codes Section */}
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold text-slate-dark font-display flex items-center gap-2">
+            <Wifi size={24} className="text-fir-green" /> Today's Access codes (Guest Wi-Fi)
+          </h3>
+          <button 
+            onClick={() => setIsWifiModalOpen(true)}
+            className="text-xs font-bold text-fir-green hover:underline flex items-center gap-1"
+          >
+            <Plus size={14} /> Add Code
+          </button>
         </div>
-      )}
+
+        <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-dark text-white text-xs">
+                <th className="p-3 font-bold uppercase tracking-wider">From Date</th>
+                <th className="p-3 font-bold uppercase tracking-wider">To Date</th>
+                <th className="p-3 font-bold uppercase tracking-wider">Access Code</th>
+                <th className="p-3 font-bold uppercase tracking-wider">Device Limit</th>
+                <th className="p-3 font-bold uppercase tracking-wider">Plan</th>
+                <th className="p-3 font-bold uppercase tracking-wider">Issued To</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-border/30">
+              {wifiCodes.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-mid text-sm italic">No active access codes recorded.</td>
+                </tr>
+              ) : (
+                wifiCodes.map((code) => (
+                  <tr key={code.id} className="hover:bg-cream/20 transition-colors text-sm">
+                    <td className="p-3 text-slate-dark">{new Date(code.fromDate).toLocaleDateString()}</td>
+                    <td className="p-3 text-slate-dark">{new Date(code.toDate).toLocaleDateString()}</td>
+                    <td className="p-3 font-mono font-bold text-fir-green">{code.accessCode}</td>
+                    <td className="p-3 text-slate-dark">{code.deviceLimit}</td>
+                    <td className="p-3 text-slate-dark">{code.plan}</td>
+                    <td className="p-3 text-slate-mid font-medium">{code.issuedTo}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Modal isOpen={isWifiModalOpen} onClose={() => setIsWifiModalOpen(false)} title="Add Guest Wi-Fi Access Code">
+        <form onSubmit={handleSubmit(onWifiSubmit)} className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-slate-dark">From Date</label>
+              <input type="date" {...register("fromDate", { required: true })} className="p-3 bg-cream border border-slate-border/50 rounded-xl outline-none" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-slate-dark">To Date</label>
+              <input type="date" {...register("toDate", { required: true })} className="p-3 bg-cream border border-slate-border/50 rounded-xl outline-none" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-slate-dark">Access Code</label>
+            <input placeholder="e.g. KHY2024" {...register("accessCode", { required: true })} className="p-3 bg-cream border border-slate-border/50 rounded-xl outline-none font-mono" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-slate-dark">Device Limit</label>
+              <input type="number" defaultValue={2} {...register("deviceLimit", { required: true })} className="p-3 bg-cream border border-slate-border/50 rounded-xl outline-none" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-slate-dark">Plan</label>
+              <input placeholder="e.g. High Speed" {...register("plan", { required: true })} className="p-3 bg-cream border border-slate-border/50 rounded-xl outline-none" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-slate-dark">Issued To</label>
+            <input placeholder="e.g. Guest Name or Dept" {...register("issuedTo", { required: true })} className="p-3 bg-cream border border-slate-border/50 rounded-xl outline-none" />
+          </div>
+          <button 
+            type="submit" 
+            disabled={isSubmittingWifi}
+            className="mt-4 bg-fir-green text-white p-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-fir-green/90 transition-all disabled:opacity-50"
+          >
+            {isSubmittingWifi ? <Loader2 className="animate-spin" size={20} /> : "Save Access Code"}
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 }
