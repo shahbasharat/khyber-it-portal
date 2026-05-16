@@ -5,14 +5,20 @@ import { api } from "@/lib/api";
 import { AlertCircle, Clock, CheckCircle, ArrowUpCircle, Plus, Loader2 } from "lucide-react";
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CreateIssueSchema, CreateIssueInput } from "@khyber/schemas";
+
+type Priority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+
+interface IssueFormData {
+  title: string;
+  description: string;
+  priority: Priority;
+}
 
 interface Issue {
   id: string;
   title: string;
   description: string;
-  priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  priority: Priority;
   status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED";
   createdAt: string;
   reporter: { name: string };
@@ -24,11 +30,8 @@ export default function IssuesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateIssueInput>({
-    resolver: zodResolver(CreateIssueSchema),
-    defaultValues: {
-      priority: "LOW"
-    }
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<IssueFormData>({
+    defaultValues: { priority: "LOW" },
   });
 
   const fetchIssues = async () => {
@@ -46,7 +49,7 @@ export default function IssuesPage() {
     fetchIssues();
   }, []);
 
-  const onSubmit = async (data: CreateIssueInput) => {
+  const onSubmit = async (data: IssueFormData) => {
     setIsSubmitting(true);
     try {
       await api.post("/issues", data);
@@ -144,7 +147,7 @@ export default function IssuesPage() {
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-slate-dark">Title</label>
             <input 
-              {...register("title")}
+              {...register("title", { required: "Title is required", minLength: { value: 3, message: "Title must be at least 3 characters" } })}
               placeholder="e.g., Wi-Fi down in Wing B"
               className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none transition-all"
             />
@@ -154,7 +157,7 @@ export default function IssuesPage() {
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-slate-dark">Description</label>
             <textarea 
-              {...register("description")}
+              {...register("description", { required: "Description is required", minLength: { value: 5, message: "Description must be at least 5 characters" } })}
               rows={3}
               placeholder="Describe the problem and location..."
               className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none transition-all resize-none"
