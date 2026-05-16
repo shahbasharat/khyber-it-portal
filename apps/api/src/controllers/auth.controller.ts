@@ -4,13 +4,7 @@ import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { LoginSchema } from "@khyber/schemas";
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-} as any);
+const prisma = new PrismaClient();
 
 const generateTokens = (userId: string) => {
   const secretAccess = (process.env.JWT_ACCESS_SECRET || "default_access_secret") as jwt.Secret;
