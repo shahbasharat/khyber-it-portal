@@ -2,14 +2,13 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-// @ts-ignore - Prisma 7 requires explicit URL if not in schema
 const prisma = new PrismaClient({
   datasources: {
     db: {
       url: process.env.DATABASE_URL,
     },
   },
-});
+} as any);
 
 async function main() {
   const passwordHash = await bcrypt.hash("khyber123!", 10);

@@ -8,14 +8,13 @@ import { PrismaClient } from "@prisma/client";
 import authRoutes from "./routes/auth.routes";
 
 const app = express();
-// @ts-ignore
 const prisma = new PrismaClient({
   datasources: {
     db: {
       url: process.env.DATABASE_URL,
     },
   },
-});
+} as any);
 const PORT = process.env.PORT || 3001;
 
 // Middleware
