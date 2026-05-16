@@ -1,8 +1,19 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import { CreateIssueSchema, UpdateIssueSchema, CreateIssueNoteSchema, EscalateIssueSchema } from "@khyber/schemas";
+import { CreateIssueSchema, UpdateIssueSchema } from "@khyber/schemas";
+import { z } from "zod";
 import { createNotification } from "./notification.controller";
 import logger from "../lib/logger";
+
+export const CreateIssueNoteSchema = z.object({
+  content: z.string().min(1, "Note cannot be empty"),
+});
+
+export const EscalateIssueSchema = z.object({
+  escalatedTo: z.string().min(1, "Escalated to is required"),
+  contactDetails: z.string().optional(),
+  remarks: z.string().optional(),
+});
 
 export const getIssues = async (req: Request, res: Response) => {
   try {
@@ -27,7 +38,7 @@ export const getIssues = async (req: Request, res: Response) => {
 export const getIssueById = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const issue = await prisma.issue.findUnique({
+    const issue = await (prisma as any).issue.findUnique({
       where: { id: id as string },
       include: {
         reporter: { select: { name: true, email: true } },
@@ -91,7 +102,7 @@ export const updateIssue = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    const validatedData = UpdateIssueSchema.parse(req.body);
+    const validatedData = UpdateIssueSchema.parse(req.body) as any;
     const { resolutionNote, ...updateData } = validatedData;
     const userId = (req as any).user.userId;
 
@@ -101,10 +112,10 @@ export const updateIssue = async (req: Request, res: Response) => {
     });
 
     if (resolutionNote && updateData.status === "RESOLVED") {
-      await prisma.issueNote.create({
+      await (prisma as any).issueNote.create({
         data: {
           content: resolutionNote,
-          issueId: id,
+          issueId: id as string,
           authorId: userId
         }
       });
@@ -126,10 +137,10 @@ export const addIssueNote = async (req: Request, res: Response) => {
     const validatedData = CreateIssueNoteSchema.parse(req.body);
     const userId = (req as any).user.userId;
 
-    const note = await prisma.issueNote.create({
+    const note = await (prisma as any).issueNote.create({
       data: {
         content: validatedData.content,
-        issueId: id,
+        issueId: id as string,
         authorId: userId
       },
       include: {
