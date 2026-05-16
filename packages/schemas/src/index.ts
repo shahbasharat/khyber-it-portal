@@ -21,9 +21,24 @@ export const UpdateIssueSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "ESCALATED"]).optional(),
   priority: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]).optional(),
   assigneeId: z.string().uuid().optional().nullable(),
+  resolutionNote: z.string().optional(),
 });
 
 export type UpdateIssueInput = z.infer<typeof UpdateIssueSchema>;
+
+export const CreateIssueNoteSchema = z.object({
+  content: z.string().min(1, "Note cannot be empty"),
+});
+
+export type CreateIssueNoteInput = z.infer<typeof CreateIssueNoteSchema>;
+
+export const EscalateIssueSchema = z.object({
+  escalatedTo: z.string().min(1, "Escalated to is required"),
+  contactDetails: z.string().optional(),
+  remarks: z.string().optional(),
+});
+
+export type EscalateIssueInput = z.infer<typeof EscalateIssueSchema>;
 
 // Shared ENUM types mapping to Prisma
 export const IssueStatus = {

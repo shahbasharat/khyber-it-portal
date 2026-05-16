@@ -40,7 +40,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Checklist", href: "/dashboard/checklist/today", icon: CheckSquare },
     { name: "Issues", href: "/dashboard/issues", icon: AlertCircle },
     { name: "Reports", href: "/dashboard/reports", icon: FileText },
-    { name: "Assets", href: "/dashboard/assets", icon: Package },
     ...(isManager ? [{ name: "Admin", href: "/admin/users", icon: Settings }] : []),
   ];
 

@@ -41,7 +41,12 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // Refresh token failed, force logout
         useAuthStore.getState().logout();
-        window.location.href = "/login";
+        
+        // Prevent infinite reload loop if already on login page
+        if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+        
         return Promise.reject(refreshError);
       }
     }

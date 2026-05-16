@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { FileText, Download, Printer, Loader2, TrendingUp, Users, AlertTriangle } from "lucide-react";
+import Link from "next/link";
 
 interface ReportData {
   date: string;
@@ -48,8 +49,19 @@ export default function ReportsPage() {
     <div className="flex flex-col gap-8 max-w-5xl mx-auto">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-bold text-slate-dark font-display">Shift Report</h2>
-          <p className="text-slate-mid">Handover summary for {new Date(data.date).toLocaleDateString()}</p>
+          <div className="flex justify-between items-center w-full">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-dark font-display">Shift Report</h2>
+              <p className="text-slate-mid">Handover summary for {new Date(data.date).toLocaleDateString()}</p>
+            </div>
+            <Link 
+              href="/dashboard/reports/new"
+              className="bg-fir-green text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-fir-green/90 transition-all shadow-sm font-bold text-sm"
+            >
+              <FileText size={18} />
+              Submit Handover
+            </Link>
+          </div>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-4 py-2 border border-slate-border text-slate-dark rounded-lg hover:bg-white transition-all">
