@@ -16,8 +16,17 @@ export const EscalateIssueSchema = z.object({
 });
 
 export const getIssues = async (req: Request, res: Response) => {
+  const { status, priority, department, assigneeId } = req.query;
+  
+  const where: any = {};
+  if (status) where.status = status;
+  if (priority) where.priority = priority;
+  if (department) where.department = department;
+  if (assigneeId) where.assigneeId = assigneeId;
+
   try {
     const issues = await prisma.issue.findMany({
+      where,
       include: {
         reporter: {
           select: { name: true, email: true },
@@ -30,7 +39,7 @@ export const getIssues = async (req: Request, res: Response) => {
     });
     res.json(issues);
   } catch (error) {
-    logger.error({ error }, "Failed to fetch issues");
+    logger.error({ error, query: req.query }, "Failed to fetch issues");
     res.status(500).json({ error: "Failed to fetch issues" });
   }
 };

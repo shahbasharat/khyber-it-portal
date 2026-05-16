@@ -12,6 +12,7 @@ import checklistRoutes from "./routes/checklist.routes";
 import statsRoutes from "./routes/stats.routes";
 import reportRoutes from "./routes/report.routes";
 import notificationRoutes from "./routes/notification.routes";
+import activityRoutes from "./routes/activity.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -60,6 +61,7 @@ app.use("/api/checklist", checklistRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/activity", activityRoutes);
 
 // Health Check Endpoint
 app.get("/health", async (req, res) => {
