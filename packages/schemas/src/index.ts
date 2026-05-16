@@ -13,6 +13,7 @@ export const CreateIssueSchema = z.object({
   title: z.string().min(3, "Title is required"),
   description: z.string().min(5, "Description is required"),
   priority: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
+  department: z.string().min(1, "Department is required"),
 });
 
 export type CreateIssueInput = z.infer<typeof CreateIssueSchema>;

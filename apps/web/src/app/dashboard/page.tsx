@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { api } from "@/lib/api";
 import Link from "next/link";
-import { AlertCircle, CheckSquare, Clock, ArrowUpCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckSquare, Clock, ArrowUpCircle, Loader2, Package } from "lucide-react";
 
 interface Stats {
   openIssues: number;
@@ -14,23 +14,36 @@ interface Stats {
   escalations: number;
 }
 
+interface Activity {
+  id: string;
+  type: "CHECKLIST_COMPLETED" | "NEW_ISSUE" | "CRITICAL_ISSUE" | "SHIFT_REPORT";
+  title: string;
+  description: string;
+  timestamp: string;
+}
+
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const response = await api.get("/stats");
-        setStats(response.data);
+        const [statsRes, activityRes] = await Promise.all([
+          api.get("/stats"),
+          api.get("/activity")
+        ]);
+        setStats(statsRes.data);
+        setActivities(activityRes.data);
       } catch (error) {
-        console.error("Failed to fetch stats", error);
+        console.error("Failed to fetch dashboard data", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
   if (!user || loading) return (
@@ -90,39 +103,46 @@ export default function DashboardPage() {
           <span className="text-xs text-slate-mid font-medium">Pending vendor action</span>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-base p-6 border border-slate-border/50 flex flex-col gap-2">
+        <Link href="/dashboard/server-room" className="bg-white rounded-2xl shadow-base p-6 border border-slate-border/50 flex flex-col gap-2 hover:border-fir-green/30 transition-all group">
           <span className="text-xs font-bold text-slate-mid uppercase tracking-widest flex items-center gap-2">
-            <Clock size={14} /> Shift Time
+            <Package size={14} /> Server Log
           </span>
-          <span className="text-4xl font-bold text-slate-dark font-display">
-            {new Date().getHours() < 13 ? 'Morning' : 'Afternoon'}
+          <span className="text-4xl font-bold text-slate-dark font-display group-hover:text-fir-green transition-colors">
+            LOG
           </span>
-          <span className="text-xs text-slate-mid font-medium">Active operational window</span>
-        </div>
+          <span className="text-xs text-slate-mid font-medium">Record room entry/exit</span>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-2xl shadow-base p-8 border border-slate-border/50">
           <h3 className="text-xl font-bold text-slate-dark mb-6 font-display">Recent Activity</h3>
           <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-fir-green-subtle flex items-center justify-center text-fir-green shrink-0">
-                <CheckSquare size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-slate-dark font-medium">Daily checklist items verified for Morning shift.</p>
-                <p className="text-xs text-slate-mid mt-1">Today, 8:45 AM</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-antique-gold shrink-0">
-                <AlertCircle size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-slate-dark font-medium">New Critical issue reported: Wing B Wi-Fi failure.</p>
-                <p className="text-xs text-slate-mid mt-1">Today, 10:15 AM</p>
-              </div>
-            </div>
+            {activities.length === 0 ? (
+              <p className="text-slate-mid text-sm">No recent operational activity.</p>
+            ) : (
+              activities.map((activity) => (
+                <div key={activity.id} className="flex gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                    activity.type === 'CHECKLIST_COMPLETED' ? 'bg-fir-green-subtle text-fir-green' :
+                    activity.type === 'CRITICAL_ISSUE' ? 'bg-red-50 text-red-600' :
+                    activity.type === 'NEW_ISSUE' ? 'bg-amber-50 text-amber-600' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    {activity.type === 'CHECKLIST_COMPLETED' ? <CheckSquare size={20} /> :
+                     activity.type === 'CRITICAL_ISSUE' ? <AlertCircle size={20} /> :
+                     activity.type === 'NEW_ISSUE' ? <AlertCircle size={20} /> :
+                     <Clock size={20} />}
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-dark font-medium">{activity.title}</p>
+                    <p className="text-xs text-slate-mid mt-1">
+                      {activity.description} • {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

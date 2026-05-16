@@ -12,6 +12,7 @@ interface IssueFormData {
   title: string;
   description: string;
   priority: Priority;
+  department: string;
 }
 
 interface Issue {
@@ -19,6 +20,7 @@ interface Issue {
   title: string;
   description: string;
   priority: Priority;
+  department: string;
   status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED";
   createdAt: string;
   reporter: { name: string };
@@ -29,14 +31,24 @@ export default function IssuesPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filters, setFilters] = useState({
+    status: "",
+    priority: "",
+    department: ""
+  });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<IssueFormData>({
-    defaultValues: { priority: "LOW" },
+    defaultValues: { priority: "LOW", department: "Other" },
   });
 
   const fetchIssues = async () => {
     try {
-      const response = await api.get("/issues");
+      const queryParams = new URLSearchParams();
+      if (filters.status) queryParams.append("status", filters.status);
+      if (filters.priority) queryParams.append("priority", filters.priority);
+      if (filters.department) queryParams.append("department", filters.department);
+
+      const response = await api.get(`/issues?${queryParams.toString()}`);
       setIssues(response.data);
     } catch (error) {
       console.error("Failed to fetch issues", error);
@@ -47,7 +59,7 @@ export default function IssuesPage() {
 
   useEffect(() => {
     fetchIssues();
-  }, []);
+  }, [filters]);
 
   const onSubmit = async (data: IssueFormData) => {
     setIsSubmitting(true);
@@ -103,6 +115,50 @@ export default function IssuesPage() {
         </button>
       </div>
 
+      <div className="bg-white p-4 rounded-xl border border-slate-border/50 shadow-sm flex flex-wrap gap-4 items-center">
+        <span className="text-xs font-bold text-slate-mid uppercase tracking-widest mr-2">Filter By:</span>
+        <select 
+          className="p-2 bg-cream border border-slate-border/50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-fir-green"
+          value={filters.status}
+          onChange={(e) => setFilters({...filters, status: e.target.value})}
+        >
+          <option value="">All Statuses</option>
+          <option value="OPEN">Open</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="RESOLVED">Resolved</option>
+          <option value="ESCALATED">Escalated</option>
+        </select>
+        <select 
+          className="p-2 bg-cream border border-slate-border/50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-fir-green"
+          value={filters.priority}
+          onChange={(e) => setFilters({...filters, priority: e.target.value})}
+        >
+          <option value="">All Priorities</option>
+          <option value="CRITICAL">Critical</option>
+          <option value="HIGH">High</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LOW">Low</option>
+        </select>
+        <select 
+          className="p-2 bg-cream border border-slate-border/50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-fir-green"
+          value={filters.department}
+          onChange={(e) => setFilters({...filters, department: e.target.value})}
+        >
+          <option value="">All Departments</option>
+          {["Front Desk", "Guest Room", "Restaurant", "Spa", "Server Room", "Conference Room", "Staff Area", "Other"].map(dept => (
+            <option key={dept} value={dept}>{dept}</option>
+          ))}
+        </select>
+        {(filters.status || filters.priority || filters.department) && (
+          <button 
+            onClick={() => setFilters({ status: "", priority: "", department: "" })}
+            className="text-xs font-bold text-color-error hover:underline"
+          >
+            Clear Filters
+          </button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 gap-4">
         {issues.length === 0 ? (
           <div className="bg-white p-12 rounded-2xl border border-dashed border-slate-border text-center">
@@ -120,6 +176,9 @@ export default function IssuesPage() {
                     <h3 className="text-lg font-bold text-slate-dark group-hover:text-fir-green transition-colors">
                       {issue.title}
                     </h3>
+                    <span className="text-[10px] font-bold text-slate-mid bg-slate-100 px-2 py-0.5 rounded uppercase">
+                      {issue.department}
+                    </span>
                   </div>
                   <p className="text-slate-mid text-sm mb-4 line-clamp-2">{issue.description}</p>
                   <div className="flex items-center gap-6 text-xs text-slate-mid">
@@ -163,6 +222,18 @@ export default function IssuesPage() {
               className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none transition-all resize-none"
             />
             {errors.description && <span className="text-xs text-color-error">{errors.description.message}</span>}
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-slate-dark">Department / Location</label>
+            <select 
+              {...register("department")}
+              className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none transition-all"
+            >
+              {["Front Desk", "Guest Room", "Restaurant", "Spa", "Server Room", "Conference Room", "Staff Area", "Other"].map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-1">

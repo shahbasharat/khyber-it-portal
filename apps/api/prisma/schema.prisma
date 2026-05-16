@@ -148,6 +148,15 @@ model Escalation {
   updatedAt      DateTime @updatedAt
 }
 
+model ServerRoomLog {
+  id        String   @id @default(uuid())
+  entryDate DateTime @default(now())
+  entryTime String
+  userName  String
+  reason    String
+  createdAt DateTime @default(now())
+}
+
 enum EscalationStatus {
   ACTIVE
   RESOLVED

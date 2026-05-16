@@ -13,6 +13,7 @@ import statsRoutes from "./routes/stats.routes";
 import reportRoutes from "./routes/report.routes";
 import notificationRoutes from "./routes/notification.routes";
 import activityRoutes from "./routes/activity.routes";
+import serverRoomRoutes from "./routes/serverRoom.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -62,6 +63,7 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/activity", activityRoutes);
+app.use("/api/server-room", serverRoomRoutes);
 
 // Health Check Endpoint
 app.get("/health", async (req, res) => {
