@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -21,6 +20,7 @@ model User {
   shifts        Shift[]
   notifications Notification[]
   checklistResponses ChecklistResponse[]
+  issueNotes    IssueNote[]
 }
 
 enum Role {
@@ -61,6 +61,8 @@ model Issue {
   assignee    User?    @relation("AssignedIssues", fields: [assigneeId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  notes       IssueNote[]
+  escalation  Escalation?
 }
 
 enum Priority {
@@ -120,4 +122,32 @@ model ChecklistResponse {
   updatedAt       DateTime @updatedAt
 
   @@unique([checklistItemId, shiftId])
+}
+
+model IssueNote {
+  id        String   @id @default(uuid())
+  content   String
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Escalation {
+  id             String   @id @default(uuid())
+  issueId        String   @unique
+  issue          Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  escalatedTo    String
+  contactDetails String?
+  remarks        String?
+  status         EscalationStatus @default(ACTIVE)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum EscalationStatus {
+  ACTIVE
+  RESOLVED
 }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
+import logger from "../lib/logger";
 
 export const getShiftSummary = async (req: Request, res: Response) => {
   const today = new Date();
@@ -39,5 +40,41 @@ export const getShiftSummary = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to generate shift summary" });
+  }
+};
+
+export const createShiftReport = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { content } = req.body;
+
+    if (!content) {
+      return res.status(400).json({ error: "Report content is required" });
+    }
+
+    // Find the active shift or create a dummy one for the report
+    // In a real app, shifts would be explicitly started/ended
+    let shift = await prisma.shift.findFirst({
+      where: { userId, endTime: null },
+      orderBy: { startTime: "desc" }
+    });
+
+    if (!shift) {
+      shift = await prisma.shift.create({
+        data: { userId, startTime: new Date() }
+      });
+    }
+
+    const report = await prisma.report.create({
+      data: {
+        shiftId: shift.id,
+        content
+      }
+    });
+
+    res.status(201).json(report);
+  } catch (error) {
+    logger.error({ error }, "Failed to create shift report");
+    res.status(500).json({ error: "Failed to create shift report" });
   }
 };
