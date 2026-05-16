@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
 import { LoginSchema } from "@khyber/schemas";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 const generateTokens = (userId: string) => {
   const secretAccess = (process.env.JWT_ACCESS_SECRET || "default_access_secret") as jwt.Secret;
@@ -57,8 +55,8 @@ export const login = async (req: any, res: any, next: any) => {
     // Set HTTP-only cookie for refresh token
     res.cookie("refreshToken", refreshTokenValue, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true, // Always true for sameSite: 'none'
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
