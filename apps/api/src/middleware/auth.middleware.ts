@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import logger from "../lib/logger";
 
 export const requireAuth = (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
@@ -8,13 +9,15 @@ export const requireAuth = (req: any, res: any, next: any) => {
   }
 
   const token = authHeader.split(" ")[1];
+  const secret = process.env.JWT_ACCESS_SECRET;
+
+  if (!secret) {
+    logger.error("JWT_ACCESS_SECRET is missing from environment variables");
+    return res.status(500).json({ error: "Internal Server Error: Security configuration missing" });
+  }
 
   try {
-    const payload = jwt.verify(
-      token,
-      process.env.JWT_ACCESS_SECRET || "default_access_secret"
-    ) as { userId: string };
-    
+    const payload = jwt.verify(token, secret) as { userId: string };
     req.user = payload;
     next();
   } catch (error) {

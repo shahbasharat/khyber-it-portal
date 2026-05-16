@@ -1,37 +1,23 @@
-"use client";
-
-import { useEffect } from "react";
-import { useAuthStore } from "@/store/authStore";
+import { Metadata } from "next";
+import { AuthInitializer } from "@/app/components/AuthInitializer";
 import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "Khyber IT Portal",
+  description: "Operations management for The Khyber Himalayan Resort & Spa IT Team",
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const initAuth = useAuthStore((state) => state.initAuth);
-  const isInitialized = useAuthStore((state) => state.isInitialized);
-
-  useEffect(() => {
-    initAuth();
-  }, [initAuth]);
-
-  if (!isInitialized) {
-    return (
-      <html lang="en">
-        <body className="bg-cream flex items-center justify-center min-h-screen">
-          <div className="animate-pulse font-display text-fir-green font-bold text-2xl">
-            Khyber IT Portal...
-          </div>
-        </body>
-      </html>
-    );
-  }
-
   return (
     <html lang="en">
       <body className="antialiased min-h-screen bg-cream">
-        {children}
+        <AuthInitializer>
+          {children}
+        </AuthInitializer>
       </body>
     </html>
   );

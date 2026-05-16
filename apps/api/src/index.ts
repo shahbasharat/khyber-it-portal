@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import { prisma } from "./lib/prisma";
+import logger from "./lib/logger";
 import authRoutes from "./routes/auth.routes";
 import issueRoutes from "./routes/issue.routes";
 import checklistRoutes from "./routes/checklist.routes";
@@ -22,6 +23,15 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginOpenerPolicy: { policy: "same-origin" }
 }));
+
+// Global Rate Limiting - Apply BEFORE routes
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: "Too many requests, please try again later." },
+});
+app.use(limiter);
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -51,19 +61,13 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 
-// Global Rate Limiting
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
-
 // Health Check Endpoint
 app.get("/health", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({ status: "ok", db: "connected" });
   } catch (error) {
+    logger.error({ error }, "Health check failed");
     res.status(500).json({ status: "error", db: "disconnected" });
   }
 });
@@ -76,11 +80,11 @@ app.get("/api/issues/status", (req, res) => {
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
+  logger.error(err.stack);
   res.status(500).json({ error: "Internal Server Error" });
 });
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 API Server running on port ${PORT}`);
+  logger.info(`🚀 API Server running on port ${PORT}`);
 });

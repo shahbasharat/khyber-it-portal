@@ -306,7 +306,7 @@ BCRYPT_ROUNDS=10
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
 EMAIL_FROM=IT Portal <it@khyberhotel.com>
 MANAGER_EMAIL=itmanager.gulmarg@khyberhotel.com
-ENGINEER1_EMAIL=sbahsarat577@gamil.com
+ENGINEER1_EMAIL=sbasharat577@gamil.com
 ENGINEER2_EMAIL=asrasyed330@gmail.com
 
 # In-App Notifications (no external service — DB-driven)

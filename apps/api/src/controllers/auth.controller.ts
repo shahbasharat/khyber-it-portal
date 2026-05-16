@@ -3,19 +3,36 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { LoginSchema } from "@khyber/schemas";
 import { prisma } from "../lib/prisma";
+import logger from "../lib/logger";
+
+const getAccessSecret = () => {
+  const secret = process.env.JWT_ACCESS_SECRET;
+  if (!secret) {
+    logger.error("JWT_ACCESS_SECRET is missing from environment variables");
+    throw new Error("Internal Server Error: Security configuration missing");
+  }
+  return secret as jwt.Secret;
+};
+
+const getRefreshSecret = () => {
+  const secret = process.env.JWT_REFRESH_SECRET;
+  if (!secret) {
+    logger.error("JWT_REFRESH_SECRET is missing from environment variables");
+    throw new Error("Internal Server Error: Security configuration missing");
+  }
+  return secret as jwt.Secret;
+};
 
 const generateTokens = (userId: string) => {
-  const secretAccess = (process.env.JWT_ACCESS_SECRET || "default_access_secret") as jwt.Secret;
   const accessToken = jwt.sign(
     { userId },
-    secretAccess,
+    getAccessSecret(),
     { expiresIn: "15m" } as jwt.SignOptions
   );
 
-  const secretRefresh = (process.env.JWT_REFRESH_SECRET || "default_refresh_secret") as jwt.Secret;
   const refreshTokenValue = jwt.sign(
     { userId },
-    secretRefresh,
+    getRefreshSecret(),
     { expiresIn: "7d" } as jwt.SignOptions
   );
 
@@ -33,13 +50,13 @@ export const login = async (req: any, res: any, next: any) => {
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      console.log(`Login Failed: User not found for email: ${email}`);
+      logger.warn({ email }, "Login Failed: User not found");
       return res.status(401).json({ error: "Incorrect username or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      console.log(`Login Failed: Password mismatch for user: ${email}`);
+      logger.warn({ email }, "Login Failed: Password mismatch");
       return res.status(401).json({ error: "Incorrect username or password" });
     }
 
@@ -96,16 +113,15 @@ export const refresh = async (req: any, res: any, next: any) => {
     }
 
     try {
-      jwt.verify(refreshTokenValue, process.env.JWT_REFRESH_SECRET || "default_refresh_secret");
+      jwt.verify(refreshTokenValue, getRefreshSecret());
     } catch {
       return res.status(401).json({ error: "Invalid refresh token signature" });
     }
 
     // Generate new access token
-    const secretAccess = (process.env.JWT_ACCESS_SECRET || "default_access_secret") as jwt.Secret;
     const accessToken = jwt.sign(
       { userId: tokenRecord.userId },
-      secretAccess,
+      getAccessSecret(),
       { expiresIn: "15m" } as jwt.SignOptions
     );
 
@@ -139,6 +155,7 @@ export const getMe = async (req: any, res: Response) => {
     });
     res.json(user);
   } catch (error) {
+    logger.error({ error }, "Failed to fetch user");
     res.status(500).json({ error: "Failed to fetch user" });
   }
 };

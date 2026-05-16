@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import { CreateIssueSchema } from "@khyber/schemas";
+import { CreateIssueSchema, UpdateIssueSchema } from "@khyber/schemas";
 import { createNotification } from "./notification.controller";
+import logger from "../lib/logger";
 
 export const getIssues = async (req: Request, res: Response) => {
   try {
@@ -18,6 +19,7 @@ export const getIssues = async (req: Request, res: Response) => {
     });
     res.json(issues);
   } catch (error) {
+    logger.error({ error }, "Failed to fetch issues");
     res.status(500).json({ error: "Failed to fetch issues" });
   }
 };
@@ -56,25 +58,27 @@ export const createIssue = async (req: any, res: Response) => {
     if (error.name === "ZodError") {
       return res.status(400).json({ error: error.errors });
     }
+    logger.error({ error }, "Failed to create issue");
     res.status(500).json({ error: "Failed to create issue" });
   }
 };
 
 export const updateIssue = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { status, priority, assigneeId } = req.body;
 
   try {
+    const validatedData = UpdateIssueSchema.parse(req.body);
+
     const issue = await prisma.issue.update({
       where: { id: id as string },
-      data: {
-        ...(status && { status }),
-        ...(priority && { priority }),
-        ...(assigneeId && { assigneeId: assigneeId as string }),
-      },
+      data: validatedData,
     });
     res.json(issue);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: error.errors });
+    }
+    logger.error({ error, issueId: id }, "Failed to update issue");
     res.status(500).json({ error: "Failed to update issue" });
   }
 };

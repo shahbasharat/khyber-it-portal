@@ -17,6 +17,14 @@ export const CreateIssueSchema = z.object({
 
 export type CreateIssueInput = z.infer<typeof CreateIssueSchema>;
 
+export const UpdateIssueSchema = z.object({
+  status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "ESCALATED"]).optional(),
+  priority: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]).optional(),
+  assigneeId: z.string().uuid().optional().nullable(),
+});
+
+export type UpdateIssueInput = z.infer<typeof UpdateIssueSchema>;
+
 // Shared ENUM types mapping to Prisma
 export const IssueStatus = {
   OPEN: "OPEN",
