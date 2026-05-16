@@ -6,6 +6,11 @@ import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import { prisma } from "./lib/prisma";
 import authRoutes from "./routes/auth.routes";
+import issueRoutes from "./routes/issue.routes";
+import checklistRoutes from "./routes/checklist.routes";
+import statsRoutes from "./routes/stats.routes";
+import reportRoutes from "./routes/report.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,7 +20,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  crossOriginPropertyPolicy: { policy: "cross-origin" }
+  crossOriginOpenerPolicy: { policy: "same-origin" }
 }));
 app.use(
   cors({
@@ -40,6 +45,11 @@ app.use(
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/issues", issueRoutes);
+app.use("/api/checklist", checklistRoutes);
+app.use("/api/stats", statsRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Global Rate Limiting
 const limiter = rateLimit({

@@ -130,3 +130,15 @@ export const logout = async (req: any, res: any, next: any) => {
     next(error);
   }
 };
+
+export const getMe = async (req: any, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, name: true, email: true, role: true },
+    });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+};

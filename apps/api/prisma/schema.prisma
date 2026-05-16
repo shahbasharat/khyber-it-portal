@@ -19,6 +19,7 @@ model User {
   issuesAssigned Issue[]       @relation("AssignedIssues")
   shifts        Shift[]
   notifications Notification[]
+  checklistResponses ChecklistResponse[]
 }
 
 enum Role {
@@ -42,6 +43,7 @@ model Shift {
   startTime DateTime
   endTime   DateTime?
   reports   Report[]
+  checklistResponses ChecklistResponse[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -93,4 +95,28 @@ model Notification {
   linkUrl   String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model ChecklistItem {
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  description String?
+  order       Int      @default(0)
+  responses   ChecklistResponse[]
+}
+
+model ChecklistResponse {
+  id              String   @id @default(uuid())
+  checklistItemId String
+  checklistItem   ChecklistItem @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  shiftId         String?
+  shift           Shift?   @relation(fields: [shiftId], references: [id])
+  completed       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([checklistItemId, shiftId])
 }

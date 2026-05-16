@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package } from "lucide-react";
 import { api } from "@/lib/api";
+import { NotificationBell } from "../../components/NotificationBell";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
@@ -36,10 +37,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Checklist", href: "/checklist/today", icon: CheckSquare },
-    { name: "Issues", href: "/issues", icon: AlertCircle },
-    { name: "Reports", href: "/shift-report/history", icon: FileText },
-    { name: "Assets", href: "/assets", icon: Package },
+    { name: "Checklist", href: "/dashboard/checklist/today", icon: CheckSquare },
+    { name: "Issues", href: "/dashboard/issues", icon: AlertCircle },
+    { name: "Reports", href: "/dashboard/reports", icon: FileText },
+    { name: "Assets", href: "/dashboard/assets", icon: Package },
     ...(isManager ? [{ name: "Admin", href: "/admin/users", icon: Settings }] : []),
   ];
 
@@ -49,7 +50,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <header className="md:hidden h-14 bg-white border-b border-slate-border/50 flex items-center justify-between px-4 sticky top-0 z-40">
         <span className="font-display font-bold text-fir-green text-lg">Khyber IT</span>
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-slate-dark">{user.name}</span>
+          <NotificationBell />
+          <span className="text-sm font-medium text-slate-dark">{user.name.split(" ")[0]}</span>
           <button onClick={handleLogout} className="text-slate-mid hover:text-color-error">
             <LogOut size={20} />
           </button>
@@ -99,10 +101,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content Area */}
       <main className="flex-1 md:ml-60 pb-20 md:pb-0 relative min-h-[calc(100vh-56px)] md:min-h-screen">
         {/* Desktop Top Header */}
-        <header className="hidden md:flex h-16 bg-white border-b border-slate-border/50 items-center px-8 sticky top-0 z-30">
+        <header className="hidden md:flex h-16 bg-white border-b border-slate-border/50 items-center justify-between px-8 sticky top-0 z-30">
           <h1 className="text-xl font-bold font-display text-slate-dark">
             {navLinks.find((l) => pathname === l.href || (l.href !== "/dashboard" && pathname.startsWith(l.href)))?.name || "Portal"}
           </h1>
+          <NotificationBell />
         </header>
 
         <div className="p-4 md:p-8">
@@ -111,9 +114,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         
         {/* Floating Action Button - Mobile Only */}
         {!isManager && (
-          <button className="fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-antique-gold text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 md:hidden">
+          <Link href="/dashboard/issues" className="fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-antique-gold text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 md:hidden">
             <span className="text-3xl leading-none mt-[-4px]">+</span>
-          </button>
+          </Link>
         )}
       </main>
 
