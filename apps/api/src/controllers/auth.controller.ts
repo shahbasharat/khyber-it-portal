@@ -55,8 +55,9 @@ export const login = async (req: any, res: any, next: any) => {
     // Set HTTP-only cookie for refresh token
     res.cookie("refreshToken", refreshTokenValue, {
       httpOnly: true,
-      secure: true, // Always true for sameSite: 'none'
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: true, 
+      sameSite: "none", // Required for Vercel -> Railway
+      path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -77,6 +78,8 @@ export const login = async (req: any, res: any, next: any) => {
 export const refresh = async (req: any, res: any, next: any) => {
   try {
     const refreshTokenValue = req.cookies?.refreshToken;
+    console.log("Debug: Received Cookies:", req.cookies); // This will show in Railway logs
+    
     if (!refreshTokenValue) {
       return res.status(401).json({ error: "No refresh token provided" });
     }

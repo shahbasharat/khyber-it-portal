@@ -13,7 +13,10 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginPropertyPolicy: { policy: "cross-origin" }
+}));
 app.use(
   cors({
     origin: (origin, callback) => {
