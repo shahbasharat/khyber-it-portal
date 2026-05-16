@@ -85,7 +85,7 @@ export const generateWeeklySummary = async () => {
       doc.moveDown(2);
 
       // --- Footer ---
-      doc.fontSize(8).fillColor("#999").text("Generated automatically by Khyber IT Portal", { align: "center", bottom: 50 });
+      doc.fontSize(8).fillColor("#999").text("Generated automatically by Khyber IT Portal", { align: "center" });
 
       doc.end();
     });

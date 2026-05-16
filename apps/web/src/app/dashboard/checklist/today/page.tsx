@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { CheckSquare, Square, ClipboardList, Loader2, Wifi, Plus } from "lucide-react";
 import { Modal } from "@/app/components/Modal";
@@ -158,13 +158,13 @@ export default function ChecklistPage() {
           </thead>
           <tbody className="divide-y divide-slate-border/30">
             {categories.map(category => (
-              <tr key={category} className="bg-cream/50">
-                <td colSpan={3} className="p-2 px-4 text-[10px] font-black text-slate-mid uppercase tracking-[0.2em]">
-                  {category}
-                </td>
-              </tr>
-            ).concat(
-              items.filter(i => i.category === category).map(item => (
+              <React.Fragment key={category}>
+                <tr className="bg-cream/50">
+                  <td colSpan={3} className="p-2 px-4 text-[10px] font-black text-slate-mid uppercase tracking-[0.2em]">
+                    {category}
+                  </td>
+                </tr>
+                {items.filter(i => i.category === category).map(item => (
                 <tr key={item.id} className="hover:bg-cream/20 transition-colors">
                   <td className="p-4 text-center">
                     <button 
@@ -203,8 +203,9 @@ export default function ChecklistPage() {
                     />
                   </td>
                 </tr>
-              ))
-            ))}
+              ))}
+            </React.Fragment>
+          ))}
           </tbody>
         </table>
       </div>
