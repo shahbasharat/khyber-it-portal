@@ -6,6 +6,7 @@ import { CheckSquare, Square, ClipboardList, Loader2, Wifi, Plus } from "lucide-
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
 import debounce from "lodash/debounce";
+import { useAuthStore } from "@/store/authStore";
 
 interface ChecklistItem {
   id: string;
@@ -37,6 +38,7 @@ interface WifiFormData {
 }
 
 export default function ChecklistPage() {
+  const user = useAuthStore(state => state.user);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [wifiCodes, setWifiCodes] = useState<WifiCode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,16 +170,16 @@ export default function ChecklistPage() {
                 <tr key={item.id} className="hover:bg-cream/20 transition-colors">
                   <td className="p-4 text-center">
                     <button 
-                      onClick={() => !toggling && handleToggle(item.id, item.completed)}
-                      disabled={toggling === item.id}
-                      className="inline-flex items-center justify-center transition-transform active:scale-90"
+                      onClick={() => !toggling && user?.role !== "VIEWER" && handleToggle(item.id, item.completed)}
+                      disabled={toggling === item.id || user?.role === "VIEWER"}
+                      className={`inline-flex items-center justify-center transition-transform active:scale-90 ${user?.role === "VIEWER" ? "cursor-not-allowed opacity-80" : ""}`}
                     >
                       {toggling === item.id ? (
                         <Loader2 size={24} className="animate-spin text-slate-mid" />
                       ) : item.completed ? (
                         <CheckSquare size={24} className="text-fir-green" />
                       ) : (
-                        <Square size={24} className="text-slate-mid hover:text-fir-green transition-colors" />
+                        <Square size={24} className={`text-slate-mid transition-colors ${user?.role !== "VIEWER" ? "hover:text-fir-green" : ""}`} />
                       )}
                     </button>
                   </td>
@@ -198,8 +200,9 @@ export default function ChecklistPage() {
                       type="text"
                       value={item.remarks}
                       onChange={(e) => handleRemarksChange(item.id, e.target.value)}
-                      placeholder="Enter remarks..."
-                      className="w-full p-2 bg-transparent border-b border-dashed border-slate-border/50 focus:border-fir-green focus:ring-0 outline-none text-sm text-slate-dark transition-all"
+                      disabled={user?.role === "VIEWER"}
+                      placeholder={user?.role === "VIEWER" ? "No remarks entered" : "Enter remarks..."}
+                      className={`w-full p-2 bg-transparent border-b border-dashed border-slate-border/50 focus:border-fir-green focus:ring-0 outline-none text-sm text-slate-dark transition-all ${user?.role === "VIEWER" ? "cursor-not-allowed text-slate-mid/70" : ""}`}
                     />
                   </td>
                 </tr>
@@ -216,12 +219,14 @@ export default function ChecklistPage() {
           <h3 className="text-xl font-bold text-slate-dark font-display flex items-center gap-2">
             <Wifi size={24} className="text-fir-green" /> Today's Access codes (Guest Wi-Fi)
           </h3>
-          <button 
-            onClick={() => setIsWifiModalOpen(true)}
-            className="text-xs font-bold text-fir-green hover:underline flex items-center gap-1"
-          >
-            <Plus size={14} /> Add Code
-          </button>
+          {user?.role !== "VIEWER" && (
+            <button 
+              onClick={() => setIsWifiModalOpen(true)}
+              className="text-xs font-bold text-fir-green hover:underline flex items-center gap-1"
+            >
+              <Plus size={14} /> Add Code
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-hidden">
