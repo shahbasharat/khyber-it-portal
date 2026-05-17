@@ -148,9 +148,9 @@ export default function ChecklistPage() {
         </div>
       </div>
 
-      {/* Checklist Table */}
-      <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-x-auto">
-        <table className="w-full min-w-[600px] text-left border-collapse">
+      {/* Desktop Checklist Table (visible on md screens and larger) */}
+      <div className="hidden md:block bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-x-auto">
+        <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-fir-green text-white">
               <th className="p-4 text-sm font-bold uppercase tracking-wider w-12 text-center">Done</th>
@@ -211,6 +211,68 @@ export default function ChecklistPage() {
           ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Checklist Card List (visible on small mobile devices only) */}
+      <div className="md:hidden flex flex-col gap-6">
+        {categories.map(category => (
+          <div key={category} className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-hidden">
+            {/* Category Header */}
+            <div className="bg-cream/70 px-4 py-2.5 border-b border-slate-border/30">
+              <span className="text-[10px] font-black text-slate-mid uppercase tracking-[0.2em]">
+                {category}
+              </span>
+            </div>
+            
+            {/* Cards List */}
+            <div className="divide-y divide-slate-border/20">
+              {items.filter(i => i.category === category).map(item => (
+                <div key={item.id} className="p-4 flex flex-col gap-3 hover:bg-cream/10 transition-colors">
+                  <div className="flex items-start gap-3">
+                    {/* Checkbox trigger */}
+                    <button 
+                      onClick={() => !toggling && user?.role !== "VIEWER" && handleToggle(item.id, item.completed)}
+                      disabled={toggling === item.id || user?.role === "VIEWER"}
+                      className={`inline-flex items-center justify-center transition-transform active:scale-90 mt-0.5 shrink-0 ${user?.role === "VIEWER" ? "cursor-not-allowed opacity-80" : ""}`}
+                    >
+                      {toggling === item.id ? (
+                        <Loader2 size={24} className="animate-spin text-slate-mid" />
+                      ) : item.completed ? (
+                        <CheckSquare size={24} className="text-fir-green" />
+                      ) : (
+                        <Square size={24} className={`text-slate-mid transition-colors ${user?.role !== "VIEWER" ? "hover:text-fir-green" : ""}`} />
+                      )}
+                    </button>
+                    
+                    {/* Title & Metadata */}
+                    <div className="flex flex-col flex-1">
+                      <span className={`font-semibold text-slate-dark text-sm leading-snug ${item.completed ? "line-through opacity-50" : ""}`}>
+                        {item.title}
+                      </span>
+                      {item.completed && item.completedBy && (
+                        <span className="text-[10px] text-slate-mid mt-1 font-medium">
+                          ✓ Checked by {item.completedBy.split(" ")[0]} at {new Date(item.completedAt!).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Remarks input field under the title */}
+                  <div className="pl-9 w-full">
+                    <input 
+                      type="text"
+                      value={item.remarks}
+                      onChange={(e) => handleRemarksChange(item.id, e.target.value)}
+                      disabled={user?.role === "VIEWER"}
+                      placeholder={user?.role === "VIEWER" ? "No remarks entered" : "Add operational remarks..."}
+                      className={`w-full p-2 bg-cream/35 border-b border-dashed border-slate-border/50 focus:border-fir-green focus:ring-0 outline-none text-xs text-slate-dark transition-all rounded-lg ${user?.role === "VIEWER" ? "cursor-not-allowed text-slate-mid/70 bg-transparent border-none" : ""}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Guest Wi-Fi Codes Section */}
