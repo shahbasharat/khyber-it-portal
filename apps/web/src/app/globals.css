@@ -7,33 +7,130 @@
 :root {
   --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-body: 'Nunito Sans', 'Myriad Pro', Arial, Helvetica, sans-serif;
-  
-  /* Luxury Light Theme Tokens (Cream & Gold) */
-  --bg-portal: #FAF8F3;
-  --bg-card: #FFFFFF;
-  --bg-sidebar: #FFFFFF;
-  --text-dark: #4A4D51;
-  --text-mid: #6B6E73;
-  --border-slate: rgba(194, 196, 199, 0.4);
-  --bg-hover: #FAF8F3;
-}
-
-/* Elite Dark Theme Tokens (Khyber Slate & Gold) */
-.dark {
-  --bg-portal: #101418;  /* Matte Slate Base */
-  --bg-card: #161A20;    /* Premium Slate Panel */
-  --bg-sidebar: #13171C; /* Darker Sidebar Backplate */
-  --text-dark: #F1F3F5;  /* Soft off-white high contrast */
-  --text-mid: #9EADB9;   /* Slate blue muted details */
-  --border-slate: rgba(255, 255, 255, 0.08); /* Low opacity grid dividers */
-  --bg-hover: #1D222A;
 }
 
 body {
-  background-color: var(--bg-portal);
-  color: var(--text-dark);
+  background-color: #FAF8F3;
+  color: #4A4D51;
   font-family: var(--font-body);
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Beautiful dark mode classes override to ensure readable text across checklists and elements! */
+.dark body {
+  background-color: #101418 !important;
+  color: #F1F3F5 !important;
+}
+
+.dark .text-slate-dark {
+  color: #F1F3F5 !important;
+}
+
+.dark .text-slate-mid {
+  color: #9EADB9 !important;
+}
+
+.dark .bg-white {
+  background-color: #161A20 !important;
+}
+
+.dark .bg-cream {
+  background-color: #101418 !important;
+}
+
+.dark .border-slate-border {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .border-slate-border\/50 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .bg-slate-50 {
+  background-color: #1E242B !important;
+}
+
+.dark .hover\:bg-slate-50:hover {
+  background-color: #1F262F !important;
+}
+
+.dark .hover\:bg-cream:hover {
+  background-color: #1F262F !important;
+}
+
+.dark input, .dark textarea, .dark select {
+  background-color: #1C2229 !important;
+  color: #F1F3F5 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark select option {
+  background-color: #161A20 !important;
+  color: #F1F3F5 !important;
+}
+
+/* Checklist specific styles to make sure items are fully readable in dark mode */
+.dark .text-slate-dark.line-through {
+  color: #6B7A87 !important; /* Muted strike-through for checked items */
+}
+
+/* Modal specific overrides for perfect crisp contrast! */
+.dark .bg-white\/80 {
+  background-color: rgba(10, 12, 16, 0.8) !important; /* Frosted dark backdrop overlay */
+}
+
+/* ----------------------------------------------------
+   A4 SHEET CORNER-CASE RULES (PRESERVED LETTERHEADS)
+   ---------------------------------------------------- */
+.print-sheet {
+  background-color: #FFFFFF !important;
+  color: #2D3748 !important;
+  border-color: #4A4D51 !important;
+}
+
+.print-sheet * {
+  color: #2D3748 !important;
+  border-color: rgba(74, 77, 81, 0.3) !important;
+}
+
+.print-sheet .bg-white {
+  background-color: #FFFFFF !important;
+}
+
+.print-sheet .bg-cream {
+  background-color: #FAF8F3 !important;
+}
+
+.print-sheet .text-fir-green {
+  color: #19433E !important;
+}
+
+.print-sheet .text-slate-dark {
+  color: #2D3748 !important;
+}
+
+.print-sheet .text-slate-mid {
+  color: #6B6E73 !important;
+}
+
+.print-sheet .border-slate-border {
+  border-color: #C2C4C7 !important;
+}
+
+.print-sheet .bg-slate-50 {
+  background-color: #F8FAFC !important;
+}
+
+.print-sheet .text-green-600 {
+  color: #16A34A !important;
+}
+
+.print-sheet .text-red-600 {
+  color: #DC2626 !important;
+}
+
+.print-sheet .text-orange-600 {
+  color: #EA580C !important;
 }
 
 .container {

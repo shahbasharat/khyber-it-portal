@@ -179,7 +179,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Main Handover Sheet Grid */}
-      <div className="bg-white border-2 border-slate-dark p-6 md:p-8 print:p-0 print:border-none shadow-md print:shadow-none flex flex-col gap-6 font-sans">
+      <div className="bg-white border-2 border-slate-dark p-6 md:p-8 print:p-0 print:border-none shadow-md print:shadow-none flex flex-col gap-6 font-sans print-sheet">
         
         {/* 1. Main Sheet Header */}
         <div className="border-4 double border-[#19433E] p-4 text-center">
