@@ -5,6 +5,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Khyber IT Portal",
   description: "Operations management for The Khyber Himalayan Resort & Spa IT Team",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Khyber IT",
+  },
 };
 
 export default function RootLayout({

@@ -4,6 +4,7 @@ import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
 import * as reportingService from "../services/reporting.service";
 import * as notificationService from "../services/notification.service";
+import * as pdfService from "../services/pdf.service";
 
 export const getShiftSummary = async (req: Request, res: Response) => {
   const today = new Date();
@@ -78,6 +79,7 @@ export const getShiftSummary = async (req: Request, res: Response) => {
     res.json({
       date: today,
       summary: {
+        id: lastReport?.id ?? null,
         totalIncidents,
         resolvedIncidents,
         pendingIncidents: totalIncidents - resolvedIncidents,
@@ -154,5 +156,19 @@ export const sendTestWeeklyReport = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error({ error }, "Error in test report route");
     res.status(500).json({ error: "Failed to generate test report" });
+  }
+};
+
+export const downloadReportPDF = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const pdfBuffer = await pdfService.generateSingleReportPDF(id);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=KHY_Handover_Report_${id.substring(0, 6)}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    logger.error({ error, reportId: req.params.id as string }, "Failed to generate report PDF download");
+    res.status(500).json({ error: "Failed to generate report PDF" });
   }
 };

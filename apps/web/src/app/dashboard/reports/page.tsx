@@ -55,6 +55,7 @@ interface Issue {
 interface ReportData {
   date: string;
   summary: {
+    id: string | null;
     totalIncidents: number;
     resolvedIncidents: number;
     pendingIncidents: number;
@@ -73,6 +74,7 @@ interface ReportData {
 export default function ReportsPage() {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const getDuration = (start: string, end: string) => {
     const diffMs = new Date(end).getTime() - new Date(start).getTime();
@@ -81,6 +83,33 @@ export default function ReportsPage() {
     const diffHours = Math.floor(diffMins / 60);
     const remainingMins = diffMins % 60;
     return `${diffHours}h ${remainingMins}m`;
+  };
+
+  const handleExportPDF = async () => {
+    if (!data?.summary?.id) {
+      alert("No submitted report found for today yet! Please click 'Submit Handover' first to log today's shift report before exporting.");
+      return;
+    }
+    setExporting(true);
+    try {
+      const response = await api.get(`/reports/${data.summary.id}/pdf`, {
+        responseType: "blob"
+      });
+      
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", `KHY_Handover_Report_${data.summary.id.substring(0, 6)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (error) {
+      console.error("Failed to download PDF", error);
+      alert("Failed to export branded PDF report.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   useEffect(() => {
@@ -131,10 +160,20 @@ export default function ReportsPage() {
             <Printer size={18} /> Print Sheet
           </button>
           <button 
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-antique-gold hover:bg-antique-gold-dark text-white rounded-xl transition-all font-bold text-sm shadow-sm"
+            onClick={handleExportPDF}
+            disabled={exporting}
+            className="flex items-center gap-2 px-5 py-2.5 bg-antique-gold hover:bg-antique-gold-dark text-white rounded-xl transition-all font-bold text-sm shadow-sm disabled:opacity-55"
           >
-            <Download size={18} /> Export PDF
+            {exporting ? (
+              <>
+                <Loader2 className="animate-spin" size={18} />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download size={18} /> Export PDF
+              </>
+            )}
           </button>
         </div>
       </div>
