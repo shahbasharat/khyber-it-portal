@@ -21,6 +21,7 @@ model User {
   notifications Notification[]
   checklistResponses ChecklistResponse[]
   issueNotes    IssueNote[]
+  assetActivities AssetActivity[]
 }
 
 enum Role {
@@ -108,6 +109,19 @@ model ChecklistItem {
   description String?
   order       Int      @default(0)
   responses   ChecklistResponse[]
+}
+
+model AssetActivity {
+  id              String   @id @default(uuid())
+  assetId         String
+  deviceType      String
+  userDepartment  String
+  activity        String
+  status          String   @default("COMPLETED") // PENDING or COMPLETED
+  engineerId      String
+  engineer        User     @relation(fields: [engineerId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model ChecklistResponse {
