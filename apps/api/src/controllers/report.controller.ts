@@ -17,7 +17,10 @@ export const getShiftSummary = async (req: Request, res: Response) => {
       criticalAlerts,
       escalations,
       completedTasks,
-      totalTasks
+      totalTasks,
+      lastReport,
+      checklistDetails,
+      issuesDetails
     ] = await Promise.all([
       prisma.issue.count({ where: { createdAt: { gte: start, lte: end } } }),
       prisma.issue.count({ where: { status: "RESOLVED", updatedAt: { gte: start, lte: end } } }),
@@ -25,6 +28,23 @@ export const getShiftSummary = async (req: Request, res: Response) => {
       prisma.issue.count({ where: { status: "ESCALATED", updatedAt: { gte: start, lte: end } } }),
       prisma.checklistResponse.count({ where: { completed: true, createdAt: { gte: start, lte: end } } }),
       prisma.checklistItem.count(),
+      prisma.report.findFirst({
+        where: { createdAt: { gte: start, lte: end } },
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.checklistResponse.findMany({
+        where: { createdAt: { gte: start, lte: end } },
+        include: { checklistItem: true, user: { select: { name: true } } }
+      }),
+      prisma.issue.findMany({
+        where: { createdAt: { gte: start, lte: end } },
+        include: {
+          reporter: { select: { name: true } },
+          assignee: { select: { name: true } },
+          notes: { orderBy: { createdAt: "desc" }, take: 1 },
+          escalation: true
+        }
+      })
     ]);
 
     res.json({
@@ -36,9 +56,12 @@ export const getShiftSummary = async (req: Request, res: Response) => {
         criticalAlerts,
         escalations,
         checklistCompletion: `${completedTasks}/${totalTasks}`,
-        usersSupported: 142, // Dummy data as per Excel template placeholder
-        downtime: 0, // Placeholder
-      }
+        usersSupported: (lastReport as any)?.usersSupported ?? 0,
+        downtime: (lastReport as any)?.downtime ?? 0,
+        handoverNotes: lastReport?.content ?? null,
+      },
+      checklist: checklistDetails,
+      issues: issuesDetails
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to generate shift summary" });
@@ -48,7 +71,7 @@ export const getShiftSummary = async (req: Request, res: Response) => {
 export const createShiftReport = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
-    const { content } = req.body;
+    const { content, usersSupported, downtime } = req.body;
 
     if (!content) {
       return res.status(400).json({ error: "Report content is required" });
@@ -70,7 +93,9 @@ export const createShiftReport = async (req: Request, res: Response) => {
     const report = await prisma.report.create({
       data: {
         shiftId: shift.id,
-        content
+        content,
+        usersSupported: Number(usersSupported || 0),
+        downtime: Number(downtime || 0)
       }
     });
 

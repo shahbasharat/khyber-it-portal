@@ -9,6 +9,8 @@ import { useForm } from "react-hook-form";
 
 interface ReportFormData {
   content: string;
+  usersSupported?: number;
+  downtime?: number;
 }
 
 export default function NewShiftReportPage() {
@@ -56,6 +58,27 @@ export default function NewShiftReportPage() {
               className="p-4 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none resize-y text-slate-dark leading-relaxed"
             />
             {errors.content && <span className="text-xs text-color-error font-medium">{errors.content.message}</span>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-slate-dark">Users Supported (Optional)</label>
+              <input
+                type="number"
+                {...register("usersSupported")}
+                placeholder="e.g. 142"
+                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none text-slate-dark"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-slate-dark">Total Downtime - Minutes (Optional)</label>
+              <input
+                type="number"
+                {...register("downtime")}
+                placeholder="e.g. 15"
+                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none text-slate-dark"
+              />
+            </div>
           </div>
 
           <div className="bg-fir-green-subtle p-4 rounded-xl border border-fir-green/20">
