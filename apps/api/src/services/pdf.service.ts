@@ -123,10 +123,10 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       doc.font("Helvetica").text(shiftName, leftColX + 80, 192);
 
       doc.font("Helvetica-Bold").text("Downtime:", rightColX, 152);
-      doc.font("Helvetica").text(`${report.downtime} Minutes`, rightColX + 100, 152);
+      doc.font("Helvetica").text(`${(report as any).downtime} Minutes`, rightColX + 100, 152);
 
       doc.font("Helvetica-Bold").text("Users Supported:", rightColX, 172);
-      doc.font("Helvetica").text(String(report.usersSupported), rightColX + 100, 172);
+      doc.font("Helvetica").text(String((report as any).usersSupported), rightColX + 100, 172);
 
       doc.font("Helvetica-Bold").text("Shift Duration:", rightColX, 192);
       const startTimeStr = format(new Date(report.shift.startTime), "hh:mm a");
