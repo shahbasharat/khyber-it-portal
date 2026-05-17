@@ -100,3 +100,72 @@ export const sendHandoverNotification = async (engineerName: string, content: st
     logger.error({ error }, "Error in sendHandoverNotification service");
   }
 };
+
+export const sendCriticalIssueEmail = async (issue: any) => {
+  const managerEmail = process.env.MANAGER_EMAIL;
+  if (!managerEmail) return;
+
+  try {
+    const recipients = managerEmail.split(",").map(e => e.trim());
+    const { error } = await resend.emails.send({
+      from: "Khyber IT Portal <onboarding@resend.dev>",
+      to: recipients,
+      subject: `🚨 CRITICAL Incident Reported: ${issue.title}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #fee2e2; border-radius: 10px;">
+          <h2 style="color: #dc2626; margin-top: 0;">🚨 CRITICAL Alert</h2>
+          <p>A new critical IT issue has been reported at the resort.</p>
+          <div style="margin: 20px 0; padding: 15px; background-color: #fef2f2; border-radius: 8px; border: 1px solid #fee2e2;">
+            <p style="margin: 0 0 10px 0;"><strong>Incident:</strong> ${issue.title}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Department/Location:</strong> ${issue.department}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Reporter:</strong> ${issue.reporter?.name || "IT Engineer"}</p>
+            <p style="margin: 10px 0 0 0; padding-top: 10px; border-top: 1px dashed #fee2e2; white-space: pre-wrap;"><strong>Description:</strong> ${issue.description}</p>
+          </div>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #666;">View full details on the <a href="${process.env.FRONTEND_URL || "https://khyber-it-portal-web.vercel.app"}/dashboard/issues">Khyber IT Portal</a>.</p>
+        </div>
+      `
+    });
+
+    if (error) {
+      logger.error({ error }, "Failed to send critical issue email");
+    }
+  } catch (error) {
+    logger.error({ error }, "Error in sendCriticalIssueEmail service");
+  }
+};
+
+export const sendEscalationEmail = async (issueTitle: string, escalation: any, engineerName: string) => {
+  const managerEmail = process.env.MANAGER_EMAIL;
+  if (!managerEmail) return;
+
+  try {
+    const recipients = managerEmail.split(",").map(e => e.trim());
+    const { error } = await resend.emails.send({
+      from: "Khyber IT Portal <onboarding@resend.dev>",
+      to: recipients,
+      subject: `⚠️ ESCALATION LOGGED: ${issueTitle}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #fed7aa; border-radius: 10px;">
+          <h2 style="color: #ea580c; margin-top: 0;">⚠️ Escalation Logged</h2>
+          <p>An IT incident has been formally escalated to a third-party vendor.</p>
+          <div style="margin: 20px 0; padding: 15px; background-color: #fff7ed; border-radius: 8px; border: 1px solid #fed7aa;">
+            <p style="margin: 0 0 10px 0;"><strong>Incident:</strong> ${issueTitle}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Escalated To:</strong> ${escalation.escalatedTo}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Contact Details/ETA:</strong> ${escalation.contactDetails || "None"}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Escalated By:</strong> ${engineerName}</p>
+            <p style="margin: 10px 0 0 0; padding-top: 10px; border-top: 1px dashed #fed7aa; white-space: pre-wrap;"><strong>Remarks:</strong> ${escalation.remarks || "None"}</p>
+          </div>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #666;">View full details on the <a href="${process.env.FRONTEND_URL || "https://khyber-it-portal-web.vercel.app"}/dashboard/issues">Khyber IT Portal</a>.</p>
+        </div>
+      `
+    });
+
+    if (error) {
+      logger.error({ error }, "Failed to send escalation email");
+    }
+  } catch (error) {
+    logger.error({ error }, "Error in sendEscalationEmail service");
+  }
+};

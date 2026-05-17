@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import { CreateIssueSchema, UpdateIssueSchema } from "@khyber/schemas";
 import { z } from "zod";
 import { createNotification } from "./notification.controller";
+import * as notificationService from "../services/notification.service";
 import logger from "../lib/logger";
 
 export const CreateIssueNoteSchema = z.object({
@@ -97,6 +98,11 @@ export const createIssue = async (req: any, res: Response) => {
       );
     }
 
+    // Trigger immediate email notification to manager for Critical priority issues
+    if (issue.priority === "CRITICAL") {
+      notificationService.sendCriticalIssueEmail(issue).catch(console.error);
+    }
+
     res.status(201).json(issue);
   } catch (error: any) {
     if (error.name === "ZodError") {
@@ -123,7 +129,7 @@ export const updateIssue = async (req: Request, res: Response) => {
     if (updateData.status === "RESOLVED") {
       // Automatically resolve associated pending escalations
       await (prisma as any).escalation.updateMany({
-        where: { issueId: id as string, status: "PENDING" },
+        where: { issueId: id as string, status: "ACTIVE" },
         data: { status: "RESOLVED" }
       });
 
@@ -139,7 +145,7 @@ export const updateIssue = async (req: Request, res: Response) => {
     } else if (updateData.status === "IN_PROGRESS" || updateData.status === "OPEN") {
       // Downgrade associated pending escalations
       await (prisma as any).escalation.updateMany({
-        where: { issueId: id as string, status: "PENDING" },
+        where: { issueId: id as string, status: "ACTIVE" },
         data: { status: "RESOLVED" }
       });
     }
@@ -206,6 +212,12 @@ export const escalateIssue = async (req: Request, res: Response) => {
         }
       })
     ]);
+
+    // Trigger immediate email notification to manager for Escalations
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user) {
+      notificationService.sendEscalationEmail(issue.title, escalation, user.name).catch(console.error);
+    }
 
     res.status(201).json(escalation);
   } catch (error: any) {
