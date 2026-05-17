@@ -13,12 +13,30 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (typeof window !== "undefined" && !navigator.onLine) {
+    const isMutation = config.method && ["post", "put", "delete", "patch"].includes(config.method.toLowerCase());
+    if (isMutation) {
+      const { enqueueRequest } = require("./offlineQueue");
+      enqueueRequest(config.url || "", config.method, config.data);
+      
+      // Cancel the request so it doesn't try to go to the server
+      const source = axios.CancelToken.source();
+      config.cancelToken = source.token;
+      source.cancel("offline_queued");
+    }
+  }
+
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (axios.isCancel(error) && error.message === "offline_queued") {
+      return Promise.resolve({ data: { success: true, status: "queued" } });
+    }
+
     const originalRequest = error.config;
 
     // If error is 401, we haven't retried yet, and it's NOT a login request

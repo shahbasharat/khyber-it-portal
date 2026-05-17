@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle } from "lucide-react";
 import { api } from "@/lib/api";
 import { NotificationBell } from "@/app/components/NotificationBell";
+import { OfflineBanner } from "@/app/components/OfflineBanner";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
@@ -102,6 +103,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content Area */}
       <main className="flex-1 md:ml-60 pb-20 md:pb-0 relative min-h-[calc(100vh-56px)] md:min-h-screen">
+        <OfflineBanner />
         {/* Desktop Top Header */}
         <header className="hidden md:flex h-16 bg-white border-b border-slate-border/50 items-center justify-between px-8 sticky top-0 z-30">
           <h1 className="text-xl font-bold font-display text-slate-dark">
