@@ -69,3 +69,33 @@ export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
     logger.error({ error }, "Error in sendShiftReminder service");
   }
 };
+
+export const sendHandoverNotification = async (engineerName: string, content: string) => {
+  const managerEmail = process.env.MANAGER_EMAIL;
+  if (!managerEmail) return;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: "Khyber IT Portal <onboarding@resend.dev>",
+      to: [managerEmail],
+      subject: `New Shift Handover Report from ${engineerName}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #004d40;">Shift Handover Report</h2>
+          <p><strong>Submitted by:</strong> ${engineerName}</p>
+          <div style="margin-top: 20px; padding: 15px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; white-space: pre-wrap;">
+            ${content}
+          </div>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #666;">View full stats on the <a href="${process.env.FRONTEND_URL}/dashboard/reports">Khyber IT Portal</a>.</p>
+        </div>
+      `
+    });
+
+    if (error) {
+      logger.error({ error }, "Failed to send handover notification email");
+    }
+  } catch (error) {
+    logger.error({ error }, "Error in sendHandoverNotification service");
+  }
+};

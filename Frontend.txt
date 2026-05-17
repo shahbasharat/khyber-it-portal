@@ -1,0 +1,8 @@
+Frontend
+
+cd apps/web
+npm run dev
+
+Backend
+cd apps/api
+npm run dev

@@ -15,6 +15,7 @@ import notificationRoutes from "./routes/notification.routes";
 import activityRoutes from "./routes/activity.routes";
 import serverRoomRoutes from "./routes/serverRoom.routes";
 import guestWifiRoutes from "./routes/guestWifi.routes";
+import userRoutes from "./routes/user.routes";
 import { initCronJobs } from "./jobs/cron";
 
 const app = express();
@@ -67,6 +68,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/server-room", serverRoomRoutes);
 app.use("/api/guest-wifi", guestWifiRoutes);
+app.use("/api/users", userRoutes);
 
 // Health Check Endpoint
 app.get("/health", async (req, res) => {

@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
 import * as reportingService from "../services/reporting.service";
+import * as notificationService from "../services/notification.service";
 
 export const getShiftSummary = async (req: Request, res: Response) => {
   const today = new Date();
@@ -72,6 +73,12 @@ export const createShiftReport = async (req: Request, res: Response) => {
         content
       }
     });
+
+    // Notify Manager asynchronously
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user) {
+      notificationService.sendHandoverNotification(user.name, content).catch(console.error);
+    }
 
     res.status(201).json(report);
   } catch (error) {

@@ -24,3 +24,28 @@ export const requireAuth = (req: any, res: any, next: any) => {
     return res.status(401).json({ error: "Token invalid or expired" });
   }
 };
+
+export const requireRole = (roles: string[]) => {
+  return async (req: any, res: any, next: any) => {
+    try {
+      if (!req.user || !req.user.userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const { prisma } = await import("../lib/prisma");
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { role: true }
+      });
+
+      if (!user || !roles.includes(user.role)) {
+        return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
+      }
+
+      req.user.role = user.role;
+      next();
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+};
