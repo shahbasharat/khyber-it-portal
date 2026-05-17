@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle } from "lucide-react";
+import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon } from "lucide-react";
 import { api } from "@/lib/api";
 import { NotificationBell } from "@/app/components/NotificationBell";
 import { OfflineBanner } from "@/app/components/OfflineBanner";
@@ -14,13 +14,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     setMounted(true);
     if (!user) {
       router.push("/login");
+      return;
+    }
+
+    // Initialize Theme Mode
+    const savedTheme = localStorage.getItem("khyber-theme") as "light" | "dark" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      setTheme("dark");
+      document.documentElement.classList.add("dark");
     }
   }, [user, router]);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    localStorage.setItem("khyber-theme", nextTheme);
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+  };
 
   const handleLogout = async () => {
     try {
@@ -63,7 +82,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="text-[8px] font-sans font-semibold text-antique-gold uppercase tracking-widest leading-none mt-0.5">IT Operations</span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={toggleTheme} 
+            className="text-slate-mid hover:text-antique-gold transition-colors p-1.5 rounded-lg flex items-center justify-center"
+            aria-label="Toggle theme"
+          >
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
           <NotificationBell />
           <span className="text-sm font-medium text-slate-dark">{user.name.split(" ")[0]}</span>
           <button onClick={handleLogout} className="text-slate-mid hover:text-color-error">
@@ -131,7 +157,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <h1 className="text-xl font-bold font-display text-slate-dark">
             {navLinks.find((l) => pathname === l.href || (l.href !== "/dashboard" && pathname.startsWith(l.href)))?.name || "Portal"}
           </h1>
-          <NotificationBell />
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={toggleTheme} 
+              className="text-slate-mid hover:text-antique-gold transition-colors p-2 rounded-xl bg-cream border border-slate-border/20 hover:bg-slate-border/10 flex items-center justify-center shadow-sm"
+              aria-label="Toggle theme"
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <NotificationBell />
+          </div>
         </header>
 
         <div className="p-4 md:p-8">

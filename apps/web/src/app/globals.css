@@ -7,12 +7,33 @@
 :root {
   --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-body: 'Nunito Sans', 'Myriad Pro', Arial, Helvetica, sans-serif;
+  
+  /* Luxury Light Theme Tokens (Cream & Gold) */
+  --bg-portal: #FAF8F3;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --text-dark: #4A4D51;
+  --text-mid: #6B6E73;
+  --border-slate: rgba(194, 196, 199, 0.4);
+  --bg-hover: #FAF8F3;
+}
+
+/* Elite Dark Theme Tokens (Khyber Slate & Gold) */
+.dark {
+  --bg-portal: #101418;  /* Matte Slate Base */
+  --bg-card: #161A20;    /* Premium Slate Panel */
+  --bg-sidebar: #13171C; /* Darker Sidebar Backplate */
+  --text-dark: #F1F3F5;  /* Soft off-white high contrast */
+  --text-mid: #9EADB9;   /* Slate blue muted details */
+  --border-slate: rgba(255, 255, 255, 0.08); /* Low opacity grid dividers */
+  --bg-hover: #1D222A;
 }
 
 body {
-  background-color: theme('colors.cream');
-  color: theme('colors.slate-dark');
+  background-color: var(--bg-portal);
+  color: var(--text-dark);
   font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .container {

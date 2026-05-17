@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -12,13 +13,14 @@ const config: Config = {
         'fir-green':          '#19433E',
         'fir-green-light':    '#235C55',
         'fir-green-subtle':   '#E8F0EF',
-        'slate-dark':         '#4A4D51',
-        'slate-mid':          '#6B6E73',
-        'slate-border':       '#C2C4C7',
+        'slate-dark':         'var(--text-dark)',
+        'slate-mid':          'var(--text-mid)',
+        'slate-border':       'var(--border-slate)',
         'antique-gold':       '#BD8D27',
         'antique-gold-light': '#D4A84B',
         'antique-gold-subtle':'#FDF6E7',
-        'cream':              '#FAF8F3',
+        'cream':              'var(--bg-portal)',
+        'white':              'var(--bg-card)',
         'color-success':      '#19433E',
         'color-warning':      '#BD8D27',
         'color-error':        '#C0392B',
