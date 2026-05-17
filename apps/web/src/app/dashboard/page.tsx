@@ -23,21 +23,35 @@ interface Activity {
   timestamp: string;
 }
 
+interface CarryOverIssue {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  escalation?: {
+    escalatedTo: string;
+  };
+}
+
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [stats, setStats] = useState<Stats | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [carryOver, setCarryOver] = useState<CarryOverIssue[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsRes, activityRes] = await Promise.all([
+        const [statsRes, activityRes, carryOverRes] = await Promise.all([
           api.get("/stats"),
-          api.get("/activity")
+          api.get("/activity"),
+          api.get("/issues/carry-over")
         ]);
         setStats(statsRes.data);
         setActivities(activityRes.data);
+        setCarryOver(carryOverRes.data);
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
       } finally {
@@ -68,6 +82,66 @@ export default function DashboardPage() {
             : "Here are your pending tasks and resort status."}
         </p>
       </div>
+
+      {/* ⚠️ Carry-Over IT Tasks Alert Banner */}
+      {carryOver.length > 0 && (
+        <div className="bg-antique-gold/10 border border-antique-gold/30 rounded-2xl p-6 flex flex-col gap-4 shadow-sm animate-fade-in">
+          <div className="flex items-center justify-between border-b border-antique-gold/20 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-antique-gold animate-ping shrink-0" />
+              <h3 className="font-display font-bold text-slate-dark text-lg">
+                Pending Carry-Over IT Tasks ({carryOver.length})
+              </h3>
+            </div>
+            <span className="text-[10px] font-bold tracking-widest text-antique-gold uppercase bg-antique-gold/15 px-3 py-1 rounded-full border border-antique-gold/25">
+              inherited from previous shifts
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {carryOver.map((issue) => {
+              const hoursAgo = Math.round((new Date().getTime() - new Date(issue.createdAt).getTime()) / (1000 * 60 * 60));
+              const ageDisplay = hoursAgo === 0 ? "Under 1 hr" : `${hoursAgo} ${hoursAgo === 1 ? "hr" : "hrs"} ago`;
+              
+              return (
+                <Link 
+                  key={issue.id}
+                  href="/dashboard/issues" 
+                  className="bg-white hover:bg-cream border border-slate-border/50 hover:border-antique-gold/45 rounded-xl p-4 transition-all flex flex-col justify-between gap-3 shadow-xs hover:shadow-sm"
+                >
+                  <div>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-[10px] font-bold text-slate-mid tracking-wide uppercase shrink-0">
+                        KHY-{issue.id.substring(0, 4).toUpperCase()}
+                      </span>
+                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded tracking-wider uppercase shrink-0 ${
+                        issue.priority === "CRITICAL" ? "bg-red-50 text-red-700 border border-red-200" :
+                        issue.priority === "HIGH" ? "bg-orange-50 text-orange-700 border border-orange-200" :
+                        "bg-slate-50 text-slate-700 border border-slate-200"
+                      }`}>
+                        {issue.priority}
+                      </span>
+                    </div>
+                    <h4 className="font-semibold text-slate-dark text-sm mt-1.5 leading-snug line-clamp-1">
+                      {issue.title}
+                    </h4>
+                  </div>
+
+                  <div className="flex justify-between items-center text-[10px] text-slate-mid font-semibold border-t border-slate-100 pt-2.5 mt-0.5">
+                    <span className="flex items-center gap-1">
+                      <Clock size={11} className="text-antique-gold" />
+                      {ageDisplay}
+                    </span>
+                    <span className="font-bold text-fir-green uppercase">
+                      {issue.status.replace("_", " ")}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <Link href="/dashboard/checklist/today" className="bg-white rounded-2xl shadow-base p-6 border border-slate-border/50 flex flex-col gap-2 hover:border-fir-green/30 transition-all group">

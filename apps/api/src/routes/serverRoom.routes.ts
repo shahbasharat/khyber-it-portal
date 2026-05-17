@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth.middleware";
 const router = Router();
 
 router.get("/", requireAuth, serverRoomController.getServerRoomLogs);
+router.get("/heartbeat", requireAuth, serverRoomController.getServerHeartbeats);
 router.post("/", requireAuth, serverRoomController.createServerRoomLog);
 
 export default router;

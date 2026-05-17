@@ -120,13 +120,27 @@ export const updateIssue = async (req: Request, res: Response) => {
       data: updateData,
     });
 
-    if (resolutionNote && updateData.status === "RESOLVED") {
-      await (prisma as any).issueNote.create({
-        data: {
-          content: resolutionNote,
-          issueId: id as string,
-          authorId: userId
-        }
+    if (updateData.status === "RESOLVED") {
+      // Automatically resolve associated pending escalations
+      await (prisma as any).escalation.updateMany({
+        where: { issueId: id as string, status: "PENDING" },
+        data: { status: "RESOLVED" }
+      });
+
+      if (resolutionNote) {
+        await (prisma as any).issueNote.create({
+          data: {
+            content: resolutionNote,
+            issueId: id as string,
+            authorId: userId
+          }
+        });
+      }
+    } else if (updateData.status === "IN_PROGRESS" || updateData.status === "OPEN") {
+      // Downgrade associated pending escalations
+      await (prisma as any).escalation.updateMany({
+        where: { issueId: id as string, status: "PENDING" },
+        data: { status: "RESOLVED" }
       });
     }
 
@@ -198,5 +212,29 @@ export const escalateIssue = async (req: Request, res: Response) => {
     if (error.name === "ZodError") return res.status(400).json({ error: error.errors });
     logger.error({ error, issueId: id }, "Failed to escalate issue");
     res.status(500).json({ error: "Failed to escalate issue" });
+  }
+};
+
+export const getCarryOverIssues = async (req: Request, res: Response) => {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const carryOver = await (prisma as any).issue.findMany({
+      where: {
+        status: { not: "RESOLVED" },
+        createdAt: { lt: todayStart }
+      },
+      include: {
+        reporter: { select: { name: true } },
+        assignee: { select: { name: true } },
+        escalation: true
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    res.json(carryOver);
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch carry-over issues");
+    res.status(500).json({ error: "Failed to fetch carry-over issues" });
   }
 };

@@ -60,7 +60,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Checklist", href: "/dashboard/checklist/today", icon: CheckSquare },
     { name: "Issues", href: "/dashboard/issues", icon: AlertCircle },
     { name: "Reports", href: "/dashboard/reports", icon: FileText },
-    { name: "Assets", href: "/dashboard/assets", icon: Wrench },
     { name: "Escalations", href: "/dashboard/escalations", icon: AlertTriangle },
     { name: "Server Log", href: "/dashboard/server-room", icon: Package },
     ...(isManager ? [{ name: "Admin", href: "/dashboard/admin/users", icon: Settings }] : []),

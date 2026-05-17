@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
-import { ClipboardList, Plus, Loader2, Clock, User as UserIcon } from "lucide-react";
+import { ClipboardList, Plus, Loader2, Clock, User as UserIcon, Activity, Wifi, Database, Tv, Lock, RefreshCw, Radio } from "lucide-react";
 
 interface LogEntry {
   id: string;
@@ -20,9 +20,20 @@ interface LogFormData {
   reason: string;
 }
 
+interface Heartbeat {
+  name: string;
+  ip: string;
+  latency: number;
+  status: string;
+  uptime: string;
+  category: string;
+}
+
 export default function ServerRoomPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [heartbeats, setHeartbeats] = useState<Heartbeat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchingHeartbeats, setFetchingHeartbeats] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,8 +54,23 @@ export default function ServerRoomPage() {
     }
   };
 
+  const fetchHeartbeats = async () => {
+    try {
+      const response = await api.get("/server-room/heartbeat");
+      setHeartbeats(response.data);
+    } catch (error) {
+      console.error("Failed to fetch heartbeats", error);
+    } finally {
+      setFetchingHeartbeats(false);
+    }
+  };
+
   useEffect(() => {
     fetchLogs();
+    fetchHeartbeats();
+    
+    const interval = setInterval(fetchHeartbeats, 5000); // Fast live updates every 5 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const onSubmit = async (data: LogFormData) => {
@@ -68,7 +94,70 @@ export default function ServerRoomPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
+      {/* 🖥️ LIVE HEARTBEAT PING MONITOR CONSOLE */}
+      <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 p-6 flex flex-col gap-6">
+        <div className="flex justify-between items-center border-b border-slate-border/30 pb-4">
+          <div>
+            <h3 className="text-xl font-bold font-display text-slate-dark flex items-center gap-2">
+              <Activity className="text-fir-green animate-pulse" size={20} />
+              Infrastructure Heartbeat Monitor
+            </h3>
+            <p className="text-slate-mid text-xs mt-1">Real-time pings and diagnostic telemetry of resort-critical core networks.</p>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-fir-green uppercase bg-fir-green-subtle px-3 py-1 rounded-full border border-fir-green/20">
+            <Radio size={12} className="animate-ping" />
+            Live Autopilot Connected
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {fetchingHeartbeats ? (
+            <div className="col-span-4 flex justify-center py-6 text-slate-mid text-xs">
+              <Loader2 className="animate-spin mr-2" size={16} /> Gathering ping responses...
+            </div>
+          ) : (
+            heartbeats.map((server) => {
+              const Icon = server.category === "DATABASE" ? Database :
+                            server.category === "ACCESS_CONTROL" ? Lock :
+                            server.category === "INTERNET" ? Wifi : Tv;
+
+              return (
+                <div key={server.name} className="border border-slate-border/50 bg-cream/20 hover:border-antique-gold/30 rounded-xl p-4 transition-all flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div className="w-9 h-9 rounded-lg bg-antique-gold/10 text-antique-gold flex items-center justify-center">
+                      <Icon size={18} />
+                    </div>
+                    <span className="text-[9px] font-bold tracking-widest text-fir-green bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase">
+                      {server.status}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-bold text-slate-dark text-sm leading-snug">{server.name}</h4>
+                    <span className="text-[10px] text-slate-mid font-mono">{server.ip}</span>
+                  </div>
+
+                  <div className="flex justify-between items-end border-t border-slate-100 pt-3 mt-1">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-bold text-slate-mid uppercase tracking-wide">Latency</span>
+                      <span className="text-lg font-bold font-display text-slate-dark leading-none mt-1">
+                        {server.latency} <span className="text-[10px] font-sans font-semibold">ms</span>
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[9px] font-bold text-slate-mid uppercase tracking-wide">Uptime</span>
+                      <span className="text-xs font-bold text-slate-dark mt-1">{server.uptime}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* 🚪 DOOR ACCESS SECURITY LOGS */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-slate-dark font-display">Server Room Door Log</h2>
@@ -76,7 +165,7 @@ export default function ServerRoomPage() {
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-fir-green text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-fir-green/90 transition-all shadow-sm"
+          className="bg-fir-green text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-fir-green/90 transition-all shadow-sm font-bold text-sm"
         >
           <Plus size={20} />
           Add Entry

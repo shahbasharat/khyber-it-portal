@@ -23,6 +23,7 @@ export default function NewShiftReportPage() {
     setIsSubmitting(true);
     try {
       await api.post(`/reports`, data);
+      alert("✓ Handover Report Submitted Successfully! A copy has been emailed to itkhyber@gmail.com.");
       router.push(`/dashboard/reports`);
     } catch (error) {
       console.error("Failed to submit shift report", error);
@@ -83,7 +84,7 @@ export default function NewShiftReportPage() {
 
           <div className="bg-fir-green-subtle p-4 rounded-xl border border-fir-green/20">
             <p className="text-sm text-fir-green font-medium">
-              <strong>Note:</strong> Submitting this report will automatically notify the IT Manager and mark your active shift tasks as handed over.
+              <strong>Note:</strong> Submitting this report will automatically mark your shift as handed over and send the compiled PDF report directly to IT Management at <strong>itkhyber@gmail.com</strong>.
             </p>
           </div>
 

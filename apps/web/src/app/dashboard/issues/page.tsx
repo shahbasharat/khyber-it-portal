@@ -418,15 +418,35 @@ export default function IssuesPage() {
               
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-slate-mid uppercase">Incident Status</label>
+                  <label className="text-xs font-bold text-slate-mid uppercase flex justify-between items-center">
+                    <span>Incident Status Workflow</span>
+                    <span className="text-[10px] text-fir-green font-bold normal-case">
+                      Current State: {selectedIssue.status.replace("_", " ")}
+                    </span>
+                  </label>
+                  
+                  {/* Beautiful visual helpers based on current status */}
+                  {selectedIssue.status === "RESOLVED" && (
+                    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-xs font-semibold mb-2 flex items-center gap-2">
+                      <CheckCircle size={16} className="text-emerald-600 shrink-0" />
+                      This incident is currently marked as RESOLVED & CLOSED.
+                    </div>
+                  )}
+                  {selectedIssue.status === "ESCALATED" && (
+                    <div className="bg-red-50 border border-red-100 text-red-800 p-3 rounded-xl text-xs font-semibold mb-2 flex items-center gap-2">
+                      <ArrowUpCircle size={16} className="text-red-500 shrink-0" />
+                      This incident is currently ESCALATED to vendor: {escalatedTo || "Specialist"}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <button
                       type="button"
                       onClick={() => setNewStatus("OPEN")}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
                         newStatus === "OPEN"
-                          ? "bg-slate-100 border-slate-400 text-slate-800 shadow-sm"
-                          : "bg-white border-slate-border text-slate-500 hover:bg-slate-50"
+                          ? "bg-slate-100 border-slate-400 text-slate-800 shadow-sm font-extrabold scale-102"
+                          : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
                       }`}
                     >
                       <AlertCircle size={14} className={newStatus === "OPEN" ? "text-slate-700" : "text-slate-400"} />
@@ -438,8 +458,8 @@ export default function IssuesPage() {
                       onClick={() => setNewStatus("IN_PROGRESS")}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
                         newStatus === "IN_PROGRESS"
-                          ? "bg-amber-50 border-antique-gold text-amber-900 shadow-sm"
-                          : "bg-white border-slate-border text-slate-500 hover:bg-slate-50"
+                          ? "bg-amber-50 border-antique-gold text-amber-900 shadow-sm font-extrabold scale-102"
+                          : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
                       }`}
                     >
                       <Clock size={14} className={newStatus === "IN_PROGRESS" ? "text-antique-gold" : "text-slate-400"} />
@@ -451,8 +471,8 @@ export default function IssuesPage() {
                       onClick={() => setNewStatus("RESOLVED")}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
                         newStatus === "RESOLVED"
-                          ? "bg-green-50/70 border-green-600 text-green-900 shadow-sm"
-                          : "bg-white border-slate-border text-slate-500 hover:bg-slate-50"
+                          ? "bg-green-50/70 border-green-600 text-green-900 shadow-sm font-extrabold scale-102"
+                          : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
                       }`}
                     >
                       <CheckCircle size={14} className={newStatus === "RESOLVED" ? "text-green-600" : "text-slate-400"} />
@@ -464,13 +484,21 @@ export default function IssuesPage() {
                       onClick={() => setNewStatus("ESCALATED")}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
                         newStatus === "ESCALATED"
-                          ? "bg-red-50 border-red-500 text-red-900 shadow-sm"
-                          : "bg-white border-slate-border text-slate-500 hover:bg-slate-50"
+                          ? "bg-red-50 border-red-500 text-red-900 shadow-sm font-extrabold scale-102"
+                          : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
                       }`}
                     >
                       <ArrowUpCircle size={14} className={newStatus === "ESCALATED" ? "text-red-500" : "text-slate-400"} />
                       Escalated
                     </button>
+                  </div>
+
+                  {/* Active helper instructions */}
+                  <div className="mt-1 text-[11px] font-semibold text-slate-mid italic">
+                    {newStatus === "OPEN" && "👉 Re-opens the incident queue for incoming IT shifts."}
+                    {newStatus === "IN_PROGRESS" && "👉 Sets the incident to In Progress (Active Troubleshooting)."}
+                    {newStatus === "RESOLVED" && "👉 Solved! Enter resolution details below to complete the report."}
+                    {newStatus === "ESCALATED" && "👉 Escalates incident to third-party vendor or resort technician."}
                   </div>
                 </div>
 

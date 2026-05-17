@@ -27,20 +27,23 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
     const shiftHour = new Date(report.shift.startTime).getHours();
     const shiftName = shiftHour < 13 ? "Morning Shift" : "Afternoon Shift";
 
-    // 2. Fetch all checklist responses for this specific shift
+    // 2. Fetch all checklist responses for the day of this report
+    const start = new Date(report.createdAt);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(report.createdAt);
+    end.setHours(23, 59, 59, 999);
+
     const checklistResponses = await prisma.checklistResponse.findMany({
-      where: { shiftId: report.shiftId },
+      where: {
+        createdAt: { gte: start, lte: end }
+      },
       include: { checklistItem: true }
     });
 
-    // 3. Fetch all issues created or resolved on this shift date range
-    // We define shift window: start of shift to end of shift (or report creation time)
-    const shiftStart = report.shift.startTime;
-    const shiftEnd = report.shift.endTime || report.createdAt;
-
+    // 3. Fetch all issues created on the day of this report
     const issues = await prisma.issue.findMany({
       where: {
-        createdAt: { gte: shiftStart, lte: shiftEnd }
+        createdAt: { gte: start, lte: end }
       },
       include: {
         reporter: { select: { name: true } },
@@ -162,9 +165,13 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
         currentY += 16;
       });
 
-      // --- SECTION 3: INCIDENTS LOG ---
+      // Filter issues into resolved and pending (representing follow-up tasks)
+      const resolvedIssues = issues.filter((i) => i.status === "RESOLVED");
+      const pendingIssues = issues.filter((i) => i.status !== "RESOLVED");
+
+      // --- SECTION 3: RESOLVED INCIDENTS LOG ---
       doc.moveDown(1);
-      doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("3. Incident & Issues Log", 40, currentY + 15);
+      doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("3. Shift Incidents Log (Resolved)", 40, currentY + 15);
       
       const issuesY = currentY + 33;
       doc.rect(40, issuesY, 515, 18).fill("#19433E");
@@ -177,11 +184,11 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       let issueY = issuesY + 18;
       doc.fillColor("#333333").fontSize(8);
 
-      if (issues.length === 0) {
-        doc.font("Helvetica-Oblique").text("No issues reported during this shift.", 50, issueY + 6);
+      if (resolvedIssues.length === 0) {
+        doc.font("Helvetica-Oblique").text("No issues resolved during this shift.", 50, issueY + 6);
         issueY += 18;
       } else {
-        issues.forEach((issue, index) => {
+        resolvedIssues.forEach((issue, index) => {
           if (index % 2 === 0) {
             doc.rect(40, issueY, 515, 20).fill("#FAF9F6");
           }
@@ -196,24 +203,65 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
             doc.fillColor("#333333").font("Helvetica").text(issue.priority, 340, issueY + 6);
           }
 
-          // Status colors
-          if (issue.status === "RESOLVED") {
-            doc.fillColor("#2E7D32").font("Helvetica-Bold").text("RESOLVED", 440, issueY + 6);
-          } else if (issue.status === "ESCALATED") {
-            doc.fillColor("#D84315").font("Helvetica-Bold").text("ESCALATED", 440, issueY + 6);
-          } else {
-            doc.fillColor("#F57F17").font("Helvetica-Bold").text(issue.status.replace("_", " "), 440, issueY + 6);
-          }
+          doc.fillColor("#2E7D32").font("Helvetica-Bold").text("RESOLVED", 440, issueY + 6);
 
           issueY += 20;
         });
       }
 
-      // --- SECTION 4: HANDOVER NOTES ---
+      // --- SECTION 4: PENDING FOLLOW-UP ACTIONS ---
       doc.moveDown(1);
-      doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("4. Handover & Shift Notes", 40, issueY + 15);
+      doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("4. Pending & Follow-up Actions", 40, issueY + 15);
       
-      const notesY = issueY + 33;
+      const pendingY = issueY + 33;
+      doc.rect(40, pendingY, 515, 18).fill("#19433E");
+      doc.fillColor("#FDFBF7").fontSize(8).font("Helvetica-Bold");
+      doc.text("TICKET NO", 50, pendingY + 5);
+      doc.text("PENDING ISSUE / REMARKS", 130, pendingY + 5);
+      doc.text("PRIORITY", 340, pendingY + 5);
+      doc.text("CURRENT STATE", 440, pendingY + 5);
+
+      let pY = pendingY + 18;
+      doc.fillColor("#333333").fontSize(8);
+
+      if (pendingIssues.length === 0) {
+        doc.font("Helvetica-Oblique").text("No pending issues or outstanding follow-ups.", 50, pY + 6);
+        pY += 18;
+      } else {
+        pendingIssues.forEach((issue, index) => {
+          if (index % 2 === 0) {
+            doc.rect(40, pY, 515, 20).fill("#FAF9F6");
+          }
+          
+          doc.fillColor("#333333").font("Helvetica-Bold").text(`KHY-${issue.id.substring(0,4).toUpperCase()}`, 50, pY + 6);
+          
+          const followUpText = (issue as any).escalation 
+            ? `${issue.title} (Escalated to: ${(issue as any).escalation.escalatedTo})`
+            : issue.title;
+
+          doc.font("Helvetica").text(followUpText, 130, pY + 6, { width: 200, height: 10 });
+          
+          if (issue.priority === "CRITICAL" || issue.priority === "HIGH") {
+            doc.fillColor("#C62828").font("Helvetica-Bold").text(issue.priority, 340, pY + 6);
+          } else {
+            doc.fillColor("#333333").font("Helvetica").text(issue.priority, 340, pY + 6);
+          }
+
+          if (issue.status === "ESCALATED") {
+            doc.fillColor("#D84315").font("Helvetica-Bold").text("ESCALATED", 440, pY + 6);
+          } else {
+            doc.fillColor("#F57F17").font("Helvetica-Bold").text(issue.status.replace("_", " "), 440, pY + 6);
+          }
+
+          pY += 20;
+        });
+      }
+
+      // --- SECTION 5: HANDOVER NOTES ---
+      doc.moveDown(1);
+      doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("5. Handover & Shift Notes", 40, pY + 15);
+      
+      const notesY = pY + 33;
       doc.rect(40, notesY, 515, 75).fill("#FDFBF7").strokeColor("#D4AF37").lineWidth(1).stroke();
       doc.fillColor("#19433E").fontSize(8).font("Helvetica-Bold").text("INCOMING SHIFT HANDOVER REMARKS:", 50, notesY + 8);
       
