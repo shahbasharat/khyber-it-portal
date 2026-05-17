@@ -2,6 +2,8 @@ import { prisma } from "../lib/prisma";
 import PDFDocument from "pdfkit";
 import { format } from "date-fns";
 import logger from "../lib/logger";
+import path from "path";
+import fs from "fs";
 
 export const generateSingleReportPDF = async (reportId: string): Promise<Buffer> => {
   try {
@@ -59,16 +61,38 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // --- BRAND HIGHLIGHT: Deep Forest Green Banner & Double Gold Divider ---
-      doc.rect(40, 40, 515, 60).fill("#19433E");
-      
-      // Title
-      doc.fillColor("#FDFBF7").fontSize(18).font("Helvetica-Bold").text("THE KHYBER HIMALAYAN RESORT & SPA", 55, 52, { align: "left" });
-      doc.fontSize(12).font("Helvetica").text("IT Operations Shift Handover Report", 55, 75, { align: "left" });
-      
-      // Right-aligned Date
-      doc.fontSize(10).font("Helvetica-Bold").text(format(new Date(report.createdAt), "dd MMM yyyy").toUpperCase(), 400, 52, { align: "right", width: 140 });
-      doc.fontSize(8).font("Helvetica").text(format(new Date(report.createdAt), "hh:mm a"), 400, 68, { align: "right", width: 140 });
+      // --- BRAND LOGO / LETTERHEAD COMPILER ---
+      const possibleLogoPaths = [
+        path.join(process.cwd(), "Public/Logo Green.png"),
+        path.join(process.cwd(), "../../Public/Logo Green.png"),
+        path.join(__dirname, "../../../../Public/Logo Green.png"),
+        path.join(process.cwd(), "Public/logo.jpg"),
+        path.join(process.cwd(), "../../Public/logo.jpg"),
+        path.join(__dirname, "../../../../Public/logo.jpg")
+      ];
+      const logoPath = possibleLogoPaths.find((p) => fs.existsSync(p));
+
+      if (logoPath) {
+        // Draw crisp luxury logo image
+        doc.image(logoPath, 40, 40, { width: 50 });
+        
+        // Branded title
+        doc.fillColor("#19433E").fontSize(16).font("Helvetica-Bold").text("THE KHYBER HIMALAYAN RESORT & SPA", 100, 48, { align: "left" });
+        doc.fontSize(10).font("Helvetica-Bold").fillColor("#C5A880").text("IT Operations Shift Handover Report", 100, 68, { align: "left" });
+        
+        // Date Meta
+        doc.fillColor("#333333").fontSize(9).font("Helvetica-Bold").text(format(new Date(report.createdAt), "dd MMM yyyy").toUpperCase(), 400, 48, { align: "right", width: 140 });
+        doc.fontSize(8).font("Helvetica").fillColor("#777777").text(format(new Date(report.createdAt), "hh:mm a"), 400, 62, { align: "right", width: 140 });
+      } else {
+        // Fallback banner if logo not present in workspace
+        doc.rect(40, 40, 515, 60).fill("#19433E");
+        
+        doc.fillColor("#FDFBF7").fontSize(18).font("Helvetica-Bold").text("THE KHYBER HIMALAYAN RESORT & SPA", 55, 52, { align: "left" });
+        doc.fontSize(12).font("Helvetica").text("IT Operations Shift Handover Report", 55, 75, { align: "left" });
+        
+        doc.fontSize(10).font("Helvetica-Bold").text(format(new Date(report.createdAt), "dd MMM yyyy").toUpperCase(), 400, 52, { align: "right", width: 140 });
+        doc.fontSize(8).font("Helvetica").text(format(new Date(report.createdAt), "hh:mm a"), 400, 68, { align: "right", width: 140 });
+      }
 
       // Gold Divider lines
       doc.moveDown(2);

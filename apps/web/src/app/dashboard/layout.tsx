@@ -51,7 +51,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-cream flex flex-col md:flex-row">
       {/* Top Header - Mobile Only */}
       <header className="md:hidden h-14 bg-white border-b border-slate-border/50 flex items-center justify-between px-4 sticky top-0 z-40">
-        <span className="font-display font-bold text-fir-green text-lg">Khyber IT</span>
+        <div className="flex items-center gap-2">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L4 14H20L12 2Z" fill="#C5A880" />
+            <path d="M12 6L7 14H17L12 6Z" fill="#19433E" />
+            <path d="M12 10L9 14H15L12 10Z" fill="#C5A880" />
+            <rect x="11" y="14" width="2" height="6" fill="#19433E" />
+          </svg>
+          <div className="flex flex-col">
+            <span className="font-display font-bold text-fir-green text-xs uppercase tracking-wider leading-none">THE KHYBER</span>
+            <span className="text-[8px] font-sans font-semibold text-antique-gold uppercase tracking-widest leading-none mt-0.5">IT Operations</span>
+          </div>
+        </div>
         <div className="flex items-center gap-4">
           <NotificationBell />
           <span className="text-sm font-medium text-slate-dark">{user.name.split(" ")[0]}</span>
@@ -64,7 +75,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar - Desktop Only */}
       <aside className="hidden md:flex flex-col w-60 bg-white border-r border-slate-border/50 fixed h-full z-40">
         <div className="h-16 flex items-center px-6 border-b border-slate-border/50">
-          <span className="font-display font-bold text-fir-green text-xl">Khyber IT</span>
+          <div className="flex items-center gap-2.5">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L4 14H20L12 2Z" fill="#C5A880" />
+              <path d="M12 6L7 14H17L12 6Z" fill="#19433E" />
+              <path d="M12 10L9 14H15L12 10Z" fill="#C5A880" />
+              <rect x="11" y="14" width="2" height="6" fill="#19433E" />
+            </svg>
+            <div className="flex flex-col">
+              <span className="font-display font-bold text-fir-green text-sm uppercase tracking-wider leading-none">THE KHYBER</span>
+              <span className="text-[9px] font-sans font-semibold text-antique-gold uppercase tracking-widest leading-none mt-0.5">IT Operations</span>
+            </div>
+          </div>
         </div>
         
         <div className="flex-1 px-4 py-6 flex flex-col gap-2 overflow-y-auto">

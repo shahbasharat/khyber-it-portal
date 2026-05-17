@@ -12,6 +12,7 @@ interface Stats {
   dailyTasks: number;
   completedTasks: number;
   escalations: number;
+  weeklyTrends: { dayName: string; count: number }[];
 }
 
 interface Activity {
@@ -147,12 +148,56 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-fir-green rounded-2xl p-8 text-white shadow-lg relative overflow-hidden group">
-          <div className="relative z-10">
-            <h3 className="text-xl font-bold mb-2 font-display">Operational Health</h3>
-            <p className="text-white/80 text-sm mb-6 max-w-[240px]">Overall system status is stable. 2 maintenance windows scheduled for tonight.</p>
-            <Link href="/dashboard/checklist/today" className="inline-flex items-center gap-2 px-6 py-3 bg-antique-gold hover:bg-antique-gold-dark rounded-xl font-bold transition-all transform group-hover:translate-x-1">
-              Complete Tasks <CheckSquare size={18} />
-            </Link>
+          <div className="relative z-10 flex flex-col justify-between h-full">
+            <div>
+              <h3 className="text-xl font-bold mb-2 font-display">Operational Health</h3>
+              <p className="text-white/80 text-sm mb-6 max-w-[280px]">Overall system status is stable. Daily IT operational checks and audits are running actively.</p>
+              <Link href="/dashboard/checklist/today" className="inline-flex items-center gap-2 px-6 py-3 bg-antique-gold hover:bg-antique-gold-dark rounded-xl font-bold transition-all transform group-hover:translate-x-1">
+                Complete Tasks <CheckSquare size={18} />
+              </Link>
+            </div>
+
+            {/* SVG Trend Chart */}
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <h4 className="text-xs font-bold tracking-widest uppercase text-white/50 mb-4 flex justify-between items-center">
+                <span>7-Day Incident Trend</span>
+                <span className="text-antique-gold text-[10px] lowercase font-normal tracking-normal bg-antique-gold/10 px-2 py-0.5 rounded-full border border-antique-gold/20">live updates</span>
+              </h4>
+              
+              <div className="h-28 w-full flex items-end justify-between gap-3 px-1">
+                {stats?.weeklyTrends?.map((trend, idx) => {
+                  const maxCount = Math.max(...(stats.weeklyTrends.map(t => t.count) || [1]), 5);
+                  // Calculate height percentage, min 10% for visibility of zero counts
+                  const heightPercent = Math.max((trend.count / maxCount) * 80, 10);
+                  
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 group/bar">
+                      <div className="w-full relative flex items-end justify-center h-20">
+                        {/* Hover Tooltip */}
+                        <span className="absolute -top-7 text-[9px] font-bold bg-white text-fir-green px-1.5 py-0.5 rounded shadow opacity-0 group-hover/bar:opacity-100 transition-opacity duration-200 pointer-events-none z-20 whitespace-nowrap">
+                          {trend.count} {trend.count === 1 ? 'incident' : 'incidents'}
+                        </span>
+                        
+                        {/* The Actual Vertical Bar */}
+                        <div 
+                          style={{ height: `${heightPercent}%` }}
+                          className={`w-full rounded-t-md transition-all duration-300 cursor-pointer ${
+                            trend.count > 0 
+                              ? 'bg-antique-gold hover:bg-antique-gold-dark shadow-sm' 
+                              : 'bg-white/10 hover:bg-white/20'
+                          }`}
+                        />
+                      </div>
+                      
+                      {/* X-Axis Label */}
+                      <span className="text-[10px] font-bold text-white/50 uppercase group-hover/bar:text-antique-gold transition-colors duration-200">
+                        {trend.dayName}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
           <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-white/5 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
         </div>

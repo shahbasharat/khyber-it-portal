@@ -8,7 +8,14 @@ export const getStats = async (req: Request, res: Response) => {
   const end = endOfDay(today);
 
   try {
-    const [openIssues, criticalIssues, dailyTasks, completedTasks, escalations] = await Promise.all([
+    // Generate dates for the last 7 days
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d;
+    }).reverse();
+
+    const [openIssues, criticalIssues, dailyTasks, completedTasks, escalations, weeklyTrends] = await Promise.all([
       prisma.issue.count({ where: { status: { not: "RESOLVED" } } }),
       prisma.issue.count({ where: { priority: "CRITICAL", status: { not: "RESOLVED" } } }),
       prisma.checklistItem.count(),
@@ -19,6 +26,19 @@ export const getStats = async (req: Request, res: Response) => {
         },
       }),
       prisma.issue.count({ where: { status: "ESCALATED" } }),
+      Promise.all(
+        last7Days.map(async (day) => {
+          const dayStart = startOfDay(day);
+          const dayEnd = endOfDay(day);
+          const count = await prisma.issue.count({
+            where: { createdAt: { gte: dayStart, lte: dayEnd } }
+          });
+          return {
+            dayName: day.toLocaleDateString("en-US", { weekday: "short" }),
+            count
+          };
+        })
+      )
     ]);
 
     res.json({
@@ -27,6 +47,7 @@ export const getStats = async (req: Request, res: Response) => {
       dailyTasks,
       completedTasks,
       escalations,
+      weeklyTrends
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch stats" });
