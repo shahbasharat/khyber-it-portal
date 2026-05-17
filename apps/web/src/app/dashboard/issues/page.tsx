@@ -218,24 +218,24 @@ export default function IssuesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <div>
           <h2 className="text-3xl font-bold text-slate-dark font-display">Issues Tracker</h2>
-          <p className="text-slate-mid">Manage and track IT incidents across the resort.</p>
+          <p className="text-slate-mid text-sm">Manage and track IT incidents across the resort.</p>
         </div>
         {user?.role !== "VIEWER" && (
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-fir-green text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-fir-green/90 transition-all shadow-sm"
+            className="w-full sm:w-auto bg-fir-green text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-fir-green/90 transition-all shadow-sm font-bold text-sm"
           >
-            <Plus size={20} />
+            <Plus size={18} />
             New Issue
           </button>
         )}
       </div>
 
-      <div className="bg-white p-4 rounded-xl border border-slate-border/50 shadow-sm flex flex-wrap gap-4 items-center">
-        <span className="text-xs font-bold text-slate-mid uppercase tracking-widest mr-2">Filter By:</span>
+      <div className="bg-white p-4 rounded-xl border border-slate-border/50 shadow-sm flex flex-wrap gap-2 sm:gap-4 items-center">
+        <span className="text-xs font-bold text-slate-mid uppercase tracking-widest mr-2 w-full sm:w-auto">Filter By:</span>
         <select 
           className="p-2 bg-cream border border-slate-border/50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-fir-green"
           value={filters.status}
@@ -290,34 +290,36 @@ export default function IssuesPage() {
               onClick={() => setSelectedIssueId(issue.id)}
               className="bg-white p-6 rounded-xl shadow-base border border-slate-border/50 hover:border-fir-green/30 transition-all cursor-pointer group"
             >
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getPriorityColor(issue.priority)}`}>
-                      {issue.priority}
-                    </span>
-                    <h3 className="text-lg font-bold text-slate-dark group-hover:text-fir-green transition-colors">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex-1 w-full">
+                  <div className="flex flex-col gap-1.5 mb-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getPriorityColor(issue.priority)}`}>
+                        {issue.priority}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-mid bg-slate-100 px-2 py-0.5 rounded uppercase">
+                        {issue.department}
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-dark group-hover:text-fir-green transition-colors leading-snug">
                       {issue.title}
                     </h3>
-                    <span className="text-[10px] font-bold text-slate-mid bg-slate-100 px-2 py-0.5 rounded uppercase">
-                      {issue.department}
-                    </span>
                   </div>
-                  <p className="text-slate-mid text-sm mb-4 line-clamp-2">{issue.description}</p>
-                  <div className="flex items-center gap-6 text-xs text-slate-mid">
+                  <p className="text-slate-mid text-sm mb-3 line-clamp-2">{issue.description}</p>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-slate-mid">
                     <span className="flex items-center gap-1">
-                      <Clock size={14} />
+                      <Clock size={13} />
                       {new Date(issue.createdAt).toLocaleDateString()}
                     </span>
                     <span className="font-medium">Reporter: {issue.reporter.name}</span>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start w-full sm:w-auto border-t sm:border-t-0 border-slate-100 pt-2.5 sm:pt-0 mt-2.5 sm:mt-0 gap-2 shrink-0">
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-cream rounded-full border border-slate-border/50 hover:bg-slate-100 transition-colors">
                     {getStatusIcon(issue.status)}
                     <span className="text-xs font-bold text-slate-dark uppercase">{issue.status.replace("_", " ")}</span>
                   </div>
-                  <span className="text-[10px] text-fir-green font-bold opacity-0 group-hover:opacity-100 transition-opacity">Click to Manage →</span>
+                  <span className="text-[10px] text-fir-green font-bold opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline">Click to Manage →</span>
                 </div>
               </div>
             </div>

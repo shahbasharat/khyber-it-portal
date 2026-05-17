@@ -242,7 +242,7 @@ export default function ServerRoomPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full min-w-[600px] text-left border-collapse">
           <thead>
             <tr className="bg-cream border-b border-slate-border/50">
               <th className="p-4 text-xs font-bold text-slate-mid uppercase tracking-widest">Date</th>

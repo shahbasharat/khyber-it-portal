@@ -113,8 +113,8 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-base border border-slate-border/50 overflow-hidden">
-        <table className="w-full text-left border-collapse">
+      <div className="bg-white rounded-xl shadow-base border border-slate-border/50 overflow-x-auto">
+        <table className="w-full min-w-[600px] text-left border-collapse">
           <thead>
             <tr className="bg-cream border-b border-slate-border/50">
               <th className="p-4 text-sm font-semibold text-slate-dark uppercase tracking-wider">Name</th>
