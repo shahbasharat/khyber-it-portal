@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { AlertCircle, Clock, CheckCircle, ArrowUpCircle, Plus, Loader2 } from "lucide-react";
+import { AlertCircle, Clock, CheckCircle, ArrowUpCircle, Plus, Loader2, User, FileText, Send, PhoneCall } from "lucide-react";
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
 
@@ -20,10 +20,34 @@ interface Issue {
   title: string;
   description: string;
   priority: Priority;
-  department: string;
   status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED";
+  department: string;
   createdAt: string;
   reporter: { name: string };
+  assignee?: { name: string } | null;
+}
+
+interface IssueNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: {
+    name: string;
+    role: string;
+  };
+}
+
+interface EscalationDetail {
+  id: string;
+  escalatedTo: string;
+  contactDetails: string | null;
+  remarks: string | null;
+  status: string;
+}
+
+interface DetailedIssue extends Issue {
+  notes: IssueNote[];
+  escalation: EscalationDetail | null;
 }
 
 export default function IssuesPage() {
@@ -31,6 +55,20 @@ export default function IssuesPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Issue Detail States
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<DetailedIssue | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [newStatus, setNewStatus] = useState<"OPEN" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED">("OPEN");
+  const [resolutionNote, setResolutionNote] = useState("");
+  const [escalatedTo, setEscalatedTo] = useState("");
+  const [contactDetails, setContactDetails] = useState("");
+  const [escalationRemarks, setEscalationRemarks] = useState("");
+  const [newNoteContent, setNewNoteContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isAddingNote, setIsAddingNote] = useState(false);
+
   const [filters, setFilters] = useState({
     status: "",
     priority: "",
@@ -57,9 +95,35 @@ export default function IssuesPage() {
     }
   };
 
+  const fetchIssueDetail = async (id: string) => {
+    setLoadingDetail(true);
+    try {
+      const response = await api.get(`/issues/${id}`);
+      setSelectedIssue(response.data);
+      setNewStatus(response.data.status);
+      // Reset inputs
+      setResolutionNote("");
+      setEscalatedTo(response.data.escalation?.escalatedTo || "");
+      setContactDetails(response.data.escalation?.contactDetails || "");
+      setEscalationRemarks(response.data.escalation?.remarks || "");
+    } catch (error) {
+      console.error("Failed to fetch issue details", error);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   useEffect(() => {
     fetchIssues();
   }, [filters]);
+
+  useEffect(() => {
+    if (selectedIssueId) {
+      fetchIssueDetail(selectedIssueId);
+    } else {
+      setSelectedIssue(null);
+    }
+  }, [selectedIssueId]);
 
   const onSubmit = async (data: IssueFormData) => {
     setIsSubmitting(true);
@@ -72,6 +136,57 @@ export default function IssuesPage() {
       console.error("Failed to create issue", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!selectedIssue) return;
+    setIsSaving(true);
+    try {
+      if (newStatus === "ESCALATED") {
+        if (!escalatedTo) {
+          alert("Please enter who the issue is escalated to.");
+          setIsSaving(false);
+          return;
+        }
+        await api.post(`/issues/${selectedIssue.id}/escalate`, {
+          escalatedTo,
+          contactDetails,
+          remarks: escalationRemarks
+        });
+      } else {
+        await api.patch(`/issues/${selectedIssue.id}`, {
+          status: newStatus,
+          resolutionNote: newStatus === "RESOLVED" ? resolutionNote : undefined
+        });
+      }
+      
+      // Refresh
+      await fetchIssueDetail(selectedIssue.id);
+      await fetchIssues();
+    } catch (error) {
+      console.error("Failed to update status", error);
+      alert("Failed to update status.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedIssueId || !newNoteContent.trim()) return;
+    setIsAddingNote(true);
+    try {
+      await api.post(`/issues/${selectedIssueId}/notes`, {
+        content: newNoteContent
+      });
+      setNewNoteContent("");
+      await fetchIssueDetail(selectedIssueId);
+    } catch (error) {
+      console.error("Failed to add note", error);
+      alert("Failed to add note.");
+    } finally {
+      setIsAddingNote(false);
     }
   };
 
@@ -166,7 +281,11 @@ export default function IssuesPage() {
           </div>
         ) : (
           issues.map((issue) => (
-            <div key={issue.id} className="bg-white p-6 rounded-xl shadow-base border border-slate-border/50 hover:border-fir-green/30 transition-all group">
+            <div 
+              key={issue.id} 
+              onClick={() => setSelectedIssueId(issue.id)}
+              className="bg-white p-6 rounded-xl shadow-base border border-slate-border/50 hover:border-fir-green/30 transition-all cursor-pointer group"
+            >
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -190,10 +309,11 @@ export default function IssuesPage() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-cream rounded-full border border-slate-border/50">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-cream rounded-full border border-slate-border/50 hover:bg-slate-100 transition-colors">
                     {getStatusIcon(issue.status)}
                     <span className="text-xs font-bold text-slate-dark uppercase">{issue.status.replace("_", " ")}</span>
                   </div>
+                  <span className="text-[10px] text-fir-green font-bold opacity-0 group-hover:opacity-100 transition-opacity">Click to Manage →</span>
                 </div>
               </div>
             </div>
@@ -201,6 +321,7 @@ export default function IssuesPage() {
         )}
       </div>
 
+      {/* CREATE ISSUE MODAL */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Report New IT Issue">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
@@ -257,6 +378,166 @@ export default function IssuesPage() {
             {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : "Submit Issue"}
           </button>
         </form>
+      </Modal>
+
+      {/* ISSUE DETAIL & LIFECYCLE MODAL */}
+      <Modal 
+        isOpen={!!selectedIssueId} 
+        onClose={() => setSelectedIssueId(null)} 
+        title={selectedIssue ? `Incident KHY-${selectedIssue.id.substring(0,4).toUpperCase()}` : "Loading Details..."}
+      >
+        {loadingDetail || !selectedIssue ? (
+          <div className="flex justify-center items-center py-12 text-slate-mid">
+            <Loader2 className="animate-spin mr-2" /> Loading incident history...
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6">
+            
+            {/* Header / Info Section */}
+            <div className="bg-cream p-4 rounded-xl border border-slate-border/50 flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getPriorityColor(selectedIssue.priority)}`}>
+                  {selectedIssue.priority} Priority
+                </span>
+                <span className="text-[10px] font-bold text-slate-mid bg-slate-200 px-2 py-0.5 rounded uppercase">
+                  {selectedIssue.department}
+                </span>
+              </div>
+              <h4 className="text-lg font-bold text-slate-dark">{selectedIssue.title}</h4>
+              <p className="text-slate-mid text-sm">{selectedIssue.description}</p>
+              <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-mid mt-2 border-t border-slate-border/30 pt-2">
+                <span><strong>Reported:</strong> {new Date(selectedIssue.createdAt).toLocaleString()}</span>
+                <span><strong>Reporter:</strong> {selectedIssue.reporter.name}</span>
+                {selectedIssue.assignee && <span><strong>Assignee:</strong> {selectedIssue.assignee.name}</span>}
+              </div>
+            </div>
+
+            {/* Lifecycle Status Modifier Section */}
+            <div className="border border-slate-border/50 rounded-xl p-4 flex flex-col gap-4">
+              <h5 className="font-bold text-slate-dark text-sm border-b border-slate-border/30 pb-2">Update Incident Status</h5>
+              
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-4">
+                  <label className="text-xs font-bold text-slate-mid uppercase w-24">Select Status:</label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as any)}
+                    className="flex-1 p-2.5 bg-cream border border-slate-border/50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-fir-green"
+                  >
+                    <option value="OPEN">⭕ Open</option>
+                    <option value="IN_PROGRESS">🟡 In Progress</option>
+                    <option value="RESOLVED">🟢 Resolved</option>
+                    <option value="ESCALATED">🚨 Escalated to Vendor</option>
+                  </select>
+                </div>
+
+                {/* Conditional Fields based on newStatus selection */}
+                {newStatus === "RESOLVED" && (
+                  <div className="flex flex-col gap-1.5 animate-fadeIn">
+                    <label className="text-xs font-bold text-slate-mid uppercase">Resolution Provided (Required for Handover Report):</label>
+                    <textarea
+                      value={resolutionNote}
+                      onChange={(e) => setResolutionNote(e.target.value)}
+                      rows={2}
+                      placeholder="Explain how the issue was resolved (e.g., rebooted router, replaced ethernet cable)..."
+                      className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green resize-none"
+                    />
+                  </div>
+                )}
+
+                {newStatus === "ESCALATED" && (
+                  <div className="flex flex-col gap-3 animate-fadeIn">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-mid uppercase">Escalated To (Vendor/Specialist Name):</label>
+                      <input
+                        type="text"
+                        value={escalatedTo}
+                        onChange={(e) => setEscalatedTo(e.target.value)}
+                        placeholder="e.g., Airtel, Keeline System, OTIS Elevator"
+                        className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-mid uppercase">Vendor ETA / Contact Details:</label>
+                      <input
+                        type="text"
+                        value={contactDetails}
+                        onChange={(e) => setContactDetails(e.target.value)}
+                        placeholder="e.g., ETA 2 hours / Call center Ref #99831"
+                        className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-mid uppercase">Escalation Remarks:</label>
+                      <textarea
+                        value={escalationRemarks}
+                        onChange={(e) => setEscalationRemarks(e.target.value)}
+                        rows={2}
+                        placeholder="Awaiting spares, engineer dispatched..."
+                        className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <button
+                  onClick={handleUpdateStatus}
+                  disabled={isSaving}
+                  className="mt-2 bg-fir-green text-white py-2 px-4 rounded-xl text-xs font-bold flex justify-center items-center gap-2 hover:bg-fir-green/90 transition-all disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle size={14} />}
+                  Save Status Update
+                </button>
+              </div>
+            </div>
+
+            {/* Progress Notes / Comments Section */}
+            <div className="flex flex-col gap-4">
+              <h5 className="font-bold text-slate-dark text-sm border-b border-slate-border/30 pb-2 flex items-center gap-2">
+                <FileText size={16} className="text-fir-green" /> Progress Notes & History
+              </h5>
+
+              {/* List of notes */}
+              <div className="flex flex-col gap-3 max-h-48 overflow-y-auto pr-1">
+                {selectedIssue.notes.length === 0 ? (
+                  <p className="text-xs text-slate-mid italic py-2">No progress notes added to this incident yet.</p>
+                ) : (
+                  selectedIssue.notes.map((note) => (
+                    <div key={note.id} className="bg-cream/40 p-2.5 rounded-lg border border-slate-border/30 text-xs">
+                      <div className="flex justify-between items-center text-[10px] text-slate-mid mb-1 font-semibold">
+                        <span className="flex items-center gap-1">
+                          <User size={10} />
+                          {note.author.name} ({note.author.role})
+                        </span>
+                        <span>{new Date(note.createdAt).toLocaleString()}</span>
+                      </div>
+                      <p className="text-slate-dark leading-normal whitespace-pre-line">{note.content}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add Progress Note Form */}
+              <form onSubmit={handleAddNote} className="flex gap-2">
+                <input
+                  type="text"
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  placeholder="Type a quick progress update or remark..."
+                  className="flex-1 p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
+                />
+                <button
+                  type="submit"
+                  disabled={isAddingNote || !newNoteContent.trim()}
+                  className="bg-antique-gold text-white px-4 rounded-xl flex items-center justify-center hover:bg-antique-gold/90 transition-all disabled:opacity-50"
+                >
+                  {isAddingNote ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
+                </button>
+              </form>
+            </div>
+
+          </div>
+        )}
       </Modal>
     </div>
   );

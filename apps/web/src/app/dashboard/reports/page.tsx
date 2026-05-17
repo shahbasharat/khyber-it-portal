@@ -31,6 +31,7 @@ interface Issue {
   status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED";
   department: string;
   createdAt: string;
+  updatedAt: string;
   reporter: {
     name: string;
   };
@@ -63,6 +64,7 @@ interface ReportData {
     usersSupported: number;
     downtime: number;
     handoverNotes: string | null;
+    teamOnDuty: string | null;
   };
   checklist: ChecklistResponse[];
   issues: Issue[];
@@ -71,6 +73,15 @@ interface ReportData {
 export default function ReportsPage() {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const getDuration = (start: string, end: string) => {
+    const diffMs = new Date(end).getTime() - new Date(start).getTime();
+    const diffMins = Math.round(diffMs / 1000 / 60);
+    if (diffMins < 60) return `${diffMins} mins`;
+    const diffHours = Math.floor(diffMins / 60);
+    const remainingMins = diffMins % 60;
+    return `${diffHours}h ${remainingMins}m`;
+  };
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -150,8 +161,8 @@ export default function ReportsPage() {
               <span>On-duty IT Engineer</span>
             </div>
             <div>
-              <span className="text-slate-mid font-bold block uppercase text-[10px]">Designation</span>
-              <span>IT Operations Team</span>
+              <span className="text-slate-mid font-bold block uppercase text-[10px]">Team Members On Duty</span>
+              <span>{data.summary.teamOnDuty || "On-duty IT Team"}</span>
             </div>
           </div>
         </div>
@@ -293,13 +304,14 @@ export default function ReportsPage() {
                   <th className="p-2 border-r border-slate-300">Issue</th>
                   <th className="p-2 border-r border-slate-300">Resolution Provided</th>
                   <th className="p-2 border-r border-slate-300">Closed By</th>
+                  <th className="p-2 border-r border-slate-300">Duration</th>
                   <th className="p-2">Remarks</th>
                 </tr>
               </thead>
               <tbody>
                 {resolvedIssuesList.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center text-slate-mid italic">No resolved issues to display for this shift.</td>
+                    <td colSpan={6} className="p-4 text-center text-slate-mid italic">No resolved issues to display for this shift.</td>
                   </tr>
                 ) : (
                   resolvedIssuesList.map((issue, idx) => (
@@ -310,6 +322,9 @@ export default function ReportsPage() {
                         {issue.notes[0]?.content || "Marked as resolved."}
                       </td>
                       <td className="p-2 border-r border-slate-300">{issue.assignee?.name || "On-duty Team"}</td>
+                      <td className="p-2 border-r border-slate-300 font-semibold text-slate-dark">
+                        {getDuration(issue.createdAt, issue.updatedAt)}
+                      </td>
                       <td className="p-2 text-slate-mid">Resolved successfully.</td>
                     </tr>
                   ))
@@ -332,14 +347,16 @@ export default function ReportsPage() {
                   <th className="p-2 border-r border-slate-300">Issue</th>
                   <th className="p-2 border-r border-slate-300">Current Status</th>
                   <th className="p-2 border-r border-slate-300">Action Required</th>
+                  <th className="p-2 border-r border-slate-300">ETA</th>
                   <th className="p-2 border-r border-slate-300">Escalated To</th>
-                  <th className="p-2">Priority</th>
+                  <th className="p-2 border-r border-slate-300">Priority</th>
+                  <th className="p-2">Remarks</th>
                 </tr>
               </thead>
               <tbody>
                 {pendingIssuesList.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-slate-mid italic">No pending operations issues outstanding.</td>
+                    <td colSpan={8} className="p-4 text-center text-slate-mid italic">No pending operations issues outstanding.</td>
                   </tr>
                 ) : (
                   pendingIssuesList.map((issue, idx) => (
@@ -348,12 +365,18 @@ export default function ReportsPage() {
                       <td className="p-2 border-r border-slate-300 font-semibold text-slate-dark">{issue.title}</td>
                       <td className="p-2 border-r border-slate-300 uppercase font-bold text-orange-600">{issue.status}</td>
                       <td className="p-2 border-r border-slate-300 italic text-slate-dark">
-                        {issue.description || "Awaiting investigation."}
+                        {issue.notes[0]?.content || issue.description || "Awaiting investigation."}
+                      </td>
+                      <td className="p-2 border-r border-slate-300 font-semibold text-slate-dark">
+                        {issue.escalation?.contactDetails || "Within shift"}
                       </td>
                       <td className="p-2 border-r border-slate-300 font-semibold text-fir-green">
                         {issue.escalation?.escalatedTo || "Internal IT"}
                       </td>
-                      <td className="p-2 font-bold text-slate-dark">{issue.priority}</td>
+                      <td className="p-2 border-r border-slate-300 font-bold text-slate-dark">{issue.priority}</td>
+                      <td className="p-2 text-slate-mid italic">
+                        {issue.escalation?.remarks || "High priority incident."}
+                      </td>
                     </tr>
                   ))
                 )}

@@ -20,7 +20,8 @@ export const getShiftSummary = async (req: Request, res: Response) => {
       totalTasks,
       lastReport,
       checklistDetails,
-      issuesDetails
+      issuesDetails,
+      checklistItemsList
     ] = await Promise.all([
       prisma.issue.count({ where: { createdAt: { gte: start, lte: end } } }),
       prisma.issue.count({ where: { status: "RESOLVED", updatedAt: { gte: start, lte: end } } }),
@@ -41,11 +42,38 @@ export const getShiftSummary = async (req: Request, res: Response) => {
         include: {
           reporter: { select: { name: true } },
           assignee: { select: { name: true } },
-          notes: { orderBy: { createdAt: "desc" }, take: 1 },
+          notes: { 
+            orderBy: { createdAt: "desc" }, 
+            take: 1,
+            include: { author: { select: { name: true } } }
+          },
           escalation: true
         }
-      })
+      }),
+      prisma.checklistItem.findMany()
     ]);
+
+    // Compute all checklist items (merging actual responses and missed checks)
+    const fullChecklist = checklistItemsList.map(item => {
+      const response = checklistDetails.find(r => r.checklistItemId === item.id);
+      return {
+        id: item.id,
+        checklistItem: { name: item.title, category: item.category },
+        completed: response ? response.completed : false,
+        remarks: response ? response.remarks : "Not checked during this shift.",
+        user: response ? response.user : { name: "System" },
+        createdAt: response ? response.createdAt : today
+      };
+    });
+
+    // Compile active team members on duty
+    const activeStaff = new Set<string>();
+    checklistDetails.forEach(r => activeStaff.add(r.user.name));
+    issuesDetails.forEach(i => {
+      activeStaff.add(i.reporter.name);
+      if (i.assignee) activeStaff.add(i.assignee.name);
+    });
+    const teamOnDuty = Array.from(activeStaff).join(", ") || "On-duty IT Team";
 
     res.json({
       date: today,
@@ -59,8 +87,9 @@ export const getShiftSummary = async (req: Request, res: Response) => {
         usersSupported: (lastReport as any)?.usersSupported ?? 0,
         downtime: (lastReport as any)?.downtime ?? 0,
         handoverNotes: lastReport?.content ?? null,
+        teamOnDuty
       },
-      checklist: checklistDetails,
+      checklist: fullChecklist,
       issues: issuesDetails
     });
   } catch (error) {
