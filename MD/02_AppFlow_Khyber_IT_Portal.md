@@ -47,8 +47,9 @@ First load → Login screen. If a valid session already exists (e.g., engineer l
 1. **Login Screen** → username field + password field + "Sign In" button → user enters credentials → taps Sign In
 2. **System validates** credentials against database → success → JWT access token created (15 min) + refresh token stored
 3. **Role check** →
-   - Role = `engineer` → redirect to `/dashboard` (Engineer view)
-   - Role = `manager` → redirect to `/dashboard` (Manager view)
+   - Role = `ASSOCIATE` or `SENIOR_ASSOCIATE` → redirect to `/dashboard` (Full Write Shift Board)
+   - Role = `MANAGER` → redirect to `/dashboard` (Full Manager/Admin Board + Admin Users access)
+   - Role = `VIEWER` → redirect to `/dashboard` (Strictly Read-Only, no mutating actions, e.g. General Manager)
 4. Dashboard loads with user's name displayed in top navigation
 
 #### Error States
@@ -353,8 +354,8 @@ First load → Login screen. If a valid session already exists (e.g., engineer l
 | Asset Activity Form | `/assets/new` | Engineer | Log hardware/device activity | Asset ID, device type, department, activity performed, status | Default, Validation, Submitting |
 | Asset Log | `/assets` | All | View all asset activity | Table of entries, sortable columns, search | Loading, Empty, Populated |
 | Checklist Manager | `/checklist/manage` | Manager | Add/edit/remove checklist items | Item list with shift assignments, Add Item form, Edit/Delete controls | Loading, Empty, Edit mode |
-| Admin — Users | `/admin/users` | Manager | Manage 3 user accounts | User list (name, role, last login), Reset Password button, Lock/Unlock | Loading, Populated |
-| Profile | `/account/profile` | All | View own account details | Name, role, shift assignment, Email address, Change Password | View mode, Edit mode, Saved confirmation |
+| Admin — Users | `/admin/users` | Manager | Manage user accounts | User list (name, role, dynamic badge), Add User, Edit User modal (name, role, optional reset password), Delete User | Loading, Populated |
+| Change Password | Modal popup (🔑 sidebar/header) | All | Update own account password | Current Password, New Password, Confirm Password | Success/error alerts, inline validations |
 
 ---
 

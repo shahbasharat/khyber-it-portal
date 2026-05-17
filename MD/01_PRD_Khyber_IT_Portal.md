@@ -287,7 +287,7 @@ As an IT manager, I want to see all active escalations in one place, so I know e
 - **No multi-property support** — Gulmarg only; no other Khyber properties
 - **No ticketing system integration** — no Jira, Freshdesk, or ServiceNow at MVP
 - **No billing or cost tracking** — no vendor invoice management
-- **No complex role permissions at MVP** — 3 roles only: Engineer (2 accounts), Manager (1 account)
+- **No complex role permissions at MVP** — Roles: Manager (Full Admin/Write), Senior Associate (Full Write), Associate (Full Write), Viewer (Strictly Read-Only access, zero modification ability).
 - **No Active Directory SSO at MVP** — simple username/password login; AD deferred to V1.2
 - **No mobile native app** — web browser only at MVP (PWA deferred to P2)
 
