@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench } from "lucide-react";
+import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle } from "lucide-react";
 import { api } from "@/lib/api";
 import { NotificationBell } from "@/app/components/NotificationBell";
 
@@ -41,6 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Issues", href: "/dashboard/issues", icon: AlertCircle },
     { name: "Reports", href: "/dashboard/reports", icon: FileText },
     { name: "Assets", href: "/dashboard/assets", icon: Wrench },
+    { name: "Escalations", href: "/dashboard/escalations", icon: AlertTriangle },
     { name: "Server Log", href: "/dashboard/server-room", icon: Package },
     ...(isManager ? [{ name: "Admin", href: "/dashboard/admin/users", icon: Settings }] : []),
   ];
