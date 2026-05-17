@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { AlertCircle, Clock, CheckCircle, ArrowUpCircle, Plus, Loader2, User, FileText, Send, PhoneCall } from "lucide-react";
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
+import { useAuthStore } from "@/store/authStore";
 
 type Priority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
@@ -51,6 +52,7 @@ interface DetailedIssue extends Issue {
 }
 
 export default function IssuesPage() {
+  const user = useAuthStore(state => state.user);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -221,13 +223,15 @@ export default function IssuesPage() {
           <h2 className="text-3xl font-bold text-slate-dark font-display">Issues Tracker</h2>
           <p className="text-slate-mid">Manage and track IT incidents across the resort.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-fir-green text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-fir-green/90 transition-all shadow-sm"
-        >
-          <Plus size={20} />
-          New Issue
-        </button>
+        {user?.role !== "VIEWER" && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-fir-green text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-fir-green/90 transition-all shadow-sm"
+          >
+            <Plus size={20} />
+            New Issue
+          </button>
+        )}
       </div>
 
       <div className="bg-white p-4 rounded-xl border border-slate-border/50 shadow-sm flex flex-wrap gap-4 items-center">
@@ -413,154 +417,156 @@ export default function IssuesPage() {
             </div>
 
             {/* Lifecycle Status Modifier Section */}
-            <div className="border border-slate-border/50 rounded-xl p-4 flex flex-col gap-4">
-              <h5 className="font-bold text-slate-dark text-sm border-b border-slate-border/30 pb-2">Update Incident Status</h5>
-              
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-slate-mid uppercase flex justify-between items-center">
-                    <span>Incident Status Workflow</span>
-                    <span className="text-[10px] text-fir-green font-bold normal-case">
-                      Current State: {selectedIssue.status.replace("_", " ")}
-                    </span>
-                  </label>
-                  
-                  {/* Beautiful visual helpers based on current status */}
-                  {selectedIssue.status === "RESOLVED" && (
-                    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-xs font-semibold mb-2 flex items-center gap-2">
-                      <CheckCircle size={16} className="text-emerald-600 shrink-0" />
-                      This incident is currently marked as RESOLVED & CLOSED.
+            {user?.role !== "VIEWER" && (
+              <div className="border border-slate-border/50 rounded-xl p-4 flex flex-col gap-4">
+                <h5 className="font-bold text-slate-dark text-sm border-b border-slate-border/30 pb-2">Update Incident Status</h5>
+                
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-slate-mid uppercase flex justify-between items-center">
+                      <span>Incident Status Workflow</span>
+                      <span className="text-[10px] text-fir-green font-bold normal-case">
+                        Current State: {selectedIssue.status.replace("_", " ")}
+                      </span>
+                    </label>
+                    
+                    {/* Beautiful visual helpers based on current status */}
+                    {selectedIssue.status === "RESOLVED" && (
+                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-xs font-semibold mb-2 flex items-center gap-2">
+                        <CheckCircle size={16} className="text-emerald-600 shrink-0" />
+                        This incident is currently marked as RESOLVED & CLOSED.
+                      </div>
+                    )}
+                    {selectedIssue.status === "ESCALATED" && (
+                      <div className="bg-red-50 border border-red-100 text-red-800 p-3 rounded-xl text-xs font-semibold mb-2 flex items-center gap-2">
+                        <ArrowUpCircle size={16} className="text-red-500 shrink-0" />
+                        This incident is currently ESCALATED to vendor: {escalatedTo || "Specialist"}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewStatus("OPEN")}
+                        className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                          newStatus === "OPEN"
+                            ? "bg-slate-100 border-slate-400 text-slate-800 shadow-sm font-extrabold scale-102"
+                            : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        <AlertCircle size={14} className={newStatus === "OPEN" ? "text-slate-700" : "text-slate-400"} />
+                        Open
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setNewStatus("IN_PROGRESS")}
+                        className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                          newStatus === "IN_PROGRESS"
+                            ? "bg-amber-50 border-antique-gold text-amber-900 shadow-sm font-extrabold scale-102"
+                            : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Clock size={14} className={newStatus === "IN_PROGRESS" ? "text-antique-gold" : "text-slate-400"} />
+                        In Progress
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setNewStatus("RESOLVED")}
+                        className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                          newStatus === "RESOLVED"
+                            ? "bg-green-50/70 border-green-600 text-green-900 shadow-sm font-extrabold scale-102"
+                            : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        <CheckCircle size={14} className={newStatus === "RESOLVED" ? "text-green-600" : "text-slate-400"} />
+                        Resolved
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setNewStatus("ESCALATED")}
+                        className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                          newStatus === "ESCALATED"
+                            ? "bg-red-50 border-red-500 text-red-900 shadow-sm font-extrabold scale-102"
+                            : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        <ArrowUpCircle size={14} className={newStatus === "ESCALATED" ? "text-red-500" : "text-slate-400"} />
+                        Escalated
+                      </button>
                     </div>
-                  )}
-                  {selectedIssue.status === "ESCALATED" && (
-                    <div className="bg-red-50 border border-red-100 text-red-800 p-3 rounded-xl text-xs font-semibold mb-2 flex items-center gap-2">
-                      <ArrowUpCircle size={16} className="text-red-500 shrink-0" />
-                      This incident is currently ESCALATED to vendor: {escalatedTo || "Specialist"}
+
+                    {/* Active helper instructions */}
+                    <div className="mt-1 text-[11px] font-semibold text-slate-mid italic">
+                      {newStatus === "OPEN" && "👉 Re-opens the incident queue for incoming IT shifts."}
+                      {newStatus === "IN_PROGRESS" && "👉 Sets the incident to In Progress (Active Troubleshooting)."}
+                      {newStatus === "RESOLVED" && "👉 Solved! Enter resolution details below to complete the report."}
+                      {newStatus === "ESCALATED" && "👉 Escalates incident to third-party vendor or resort technician."}
                     </div>
-                  )}
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setNewStatus("OPEN")}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
-                        newStatus === "OPEN"
-                          ? "bg-slate-100 border-slate-400 text-slate-800 shadow-sm font-extrabold scale-102"
-                          : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
-                      }`}
-                    >
-                      <AlertCircle size={14} className={newStatus === "OPEN" ? "text-slate-700" : "text-slate-400"} />
-                      Open
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setNewStatus("IN_PROGRESS")}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
-                        newStatus === "IN_PROGRESS"
-                          ? "bg-amber-50 border-antique-gold text-amber-900 shadow-sm font-extrabold scale-102"
-                          : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Clock size={14} className={newStatus === "IN_PROGRESS" ? "text-antique-gold" : "text-slate-400"} />
-                      In Progress
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setNewStatus("RESOLVED")}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
-                        newStatus === "RESOLVED"
-                          ? "bg-green-50/70 border-green-600 text-green-900 shadow-sm font-extrabold scale-102"
-                          : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
-                      }`}
-                    >
-                      <CheckCircle size={14} className={newStatus === "RESOLVED" ? "text-green-600" : "text-slate-400"} />
-                      Resolved
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setNewStatus("ESCALATED")}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
-                        newStatus === "ESCALATED"
-                          ? "bg-red-50 border-red-500 text-red-900 shadow-sm font-extrabold scale-102"
-                          : "bg-white border-slate-border/50 text-slate-500 hover:bg-slate-50"
-                      }`}
-                    >
-                      <ArrowUpCircle size={14} className={newStatus === "ESCALATED" ? "text-red-500" : "text-slate-400"} />
-                      Escalated
-                    </button>
                   </div>
 
-                  {/* Active helper instructions */}
-                  <div className="mt-1 text-[11px] font-semibold text-slate-mid italic">
-                    {newStatus === "OPEN" && "👉 Re-opens the incident queue for incoming IT shifts."}
-                    {newStatus === "IN_PROGRESS" && "👉 Sets the incident to In Progress (Active Troubleshooting)."}
-                    {newStatus === "RESOLVED" && "👉 Solved! Enter resolution details below to complete the report."}
-                    {newStatus === "ESCALATED" && "👉 Escalates incident to third-party vendor or resort technician."}
-                  </div>
-                </div>
-
-                {/* Conditional Fields based on newStatus selection */}
-                {newStatus === "RESOLVED" && (
-                  <div className="flex flex-col gap-1.5 animate-fadeIn">
-                    <label className="text-xs font-bold text-slate-mid uppercase">Resolution Provided (Required for Handover Report):</label>
-                    <textarea
-                      value={resolutionNote}
-                      onChange={(e) => setResolutionNote(e.target.value)}
-                      rows={2}
-                      placeholder="Explain how the issue was resolved (e.g., rebooted router, replaced ethernet cable)..."
-                      className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green resize-none"
-                    />
-                  </div>
-                )}
-
-                {newStatus === "ESCALATED" && (
-                  <div className="flex flex-col gap-3 animate-fadeIn">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-mid uppercase">Escalated To (Vendor/Specialist Name):</label>
-                      <input
-                        type="text"
-                        value={escalatedTo}
-                        onChange={(e) => setEscalatedTo(e.target.value)}
-                        placeholder="e.g., Airtel, Keeline System, OTIS Elevator"
-                        className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-mid uppercase">Vendor ETA / Contact Details:</label>
-                      <input
-                        type="text"
-                        value={contactDetails}
-                        onChange={(e) => setContactDetails(e.target.value)}
-                        placeholder="e.g., ETA 2 hours / Call center Ref #99831"
-                        className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-mid uppercase">Escalation Remarks:</label>
+                  {/* Conditional Fields based on newStatus selection */}
+                  {newStatus === "RESOLVED" && (
+                    <div className="flex flex-col gap-1.5 animate-fadeIn">
+                      <label className="text-xs font-bold text-slate-mid uppercase">Resolution Provided (Required for Handover Report):</label>
                       <textarea
-                        value={escalationRemarks}
-                        onChange={(e) => setEscalationRemarks(e.target.value)}
+                        value={resolutionNote}
+                        onChange={(e) => setResolutionNote(e.target.value)}
                         rows={2}
-                        placeholder="Awaiting spares, engineer dispatched..."
+                        placeholder="Explain how the issue was resolved (e.g., rebooted router, replaced ethernet cable)..."
                         className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green resize-none"
                       />
                     </div>
-                  </div>
-                )}
-                
-                <button
-                  onClick={handleUpdateStatus}
-                  disabled={isSaving}
-                  className="mt-2 bg-fir-green text-white py-2 px-4 rounded-xl text-xs font-bold flex justify-center items-center gap-2 hover:bg-fir-green/90 transition-all disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle size={14} />}
-                  Save Status Update
-                </button>
+                  )}
+
+                  {newStatus === "ESCALATED" && (
+                    <div className="flex flex-col gap-3 animate-fadeIn">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-slate-mid uppercase">Escalated To (Vendor/Specialist Name):</label>
+                        <input
+                          type="text"
+                          value={escalatedTo}
+                          onChange={(e) => setEscalatedTo(e.target.value)}
+                          placeholder="e.g., Airtel, Keeline System, OTIS Elevator"
+                          className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-slate-mid uppercase">Vendor ETA / Contact Details:</label>
+                        <input
+                          type="text"
+                          value={contactDetails}
+                          onChange={(e) => setContactDetails(e.target.value)}
+                          placeholder="e.g., ETA 2 hours / Call center Ref #99831"
+                          className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-slate-mid uppercase">Escalation Remarks:</label>
+                        <textarea
+                          value={escalationRemarks}
+                          onChange={(e) => setEscalationRemarks(e.target.value)}
+                          rows={2}
+                          placeholder="Awaiting spares, engineer dispatched..."
+                          className="p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green resize-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={handleUpdateStatus}
+                    disabled={isSaving}
+                    className="mt-2 bg-fir-green text-white py-2 px-4 rounded-xl text-xs font-bold flex justify-center items-center gap-2 hover:bg-fir-green/90 transition-all disabled:opacity-50"
+                  >
+                    {isSaving ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle size={14} />}
+                    Save Status Update
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Progress Notes / Comments Section */}
             <div className="flex flex-col gap-4">
@@ -589,22 +595,24 @@ export default function IssuesPage() {
               </div>
 
               {/* Add Progress Note Form */}
-              <form onSubmit={handleAddNote} className="flex gap-2">
-                <input
-                  type="text"
-                  value={newNoteContent}
-                  onChange={(e) => setNewNoteContent(e.target.value)}
-                  placeholder="Type a quick progress update or remark..."
-                  className="flex-1 p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
-                />
-                <button
-                  type="submit"
-                  disabled={isAddingNote || !newNoteContent.trim()}
-                  className="bg-antique-gold text-white px-4 rounded-xl flex items-center justify-center hover:bg-antique-gold/90 transition-all disabled:opacity-50"
-                >
-                  {isAddingNote ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
-                </button>
-              </form>
+              {user?.role !== "VIEWER" && (
+                <form onSubmit={handleAddNote} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newNoteContent}
+                    onChange={(e) => setNewNoteContent(e.target.value)}
+                    placeholder="Type a quick progress update or remark..."
+                    className="flex-1 p-2.5 bg-cream border border-slate-border/50 rounded-xl text-xs outline-none focus:ring-2 focus:ring-fir-green"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isAddingNote || !newNoteContent.trim()}
+                    className="bg-antique-gold text-white px-4 rounded-xl flex items-center justify-center hover:bg-antique-gold/90 transition-all disabled:opacity-50"
+                  >
+                    {isAddingNote ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
+                  </button>
+                </form>
+              )}
             </div>
 
           </div>

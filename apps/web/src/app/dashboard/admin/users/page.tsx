@@ -11,7 +11,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "MANAGER" | "ENGINEER";
+  role: "MANAGER" | "ENGINEER" | "SENIOR_ASSOCIATE" | "ASSOCIATE" | "VIEWER";
   createdAt: string;
 }
 
@@ -111,9 +111,13 @@ export default function AdminUsersPage() {
                 <td className="p-4 hidden md:table-cell text-slate-mid">{user.email}</td>
                 <td className="p-4">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    user.role === "MANAGER" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"
+                    user.role === "MANAGER" ? "bg-amber-100 text-amber-800" :
+                    user.role === "SENIOR_ASSOCIATE" ? "bg-indigo-100 text-indigo-800" :
+                    user.role === "ASSOCIATE" ? "bg-teal-100 text-teal-800" :
+                    user.role === "VIEWER" ? "bg-slate-100 text-slate-800 border border-slate-300" :
+                    "bg-blue-100 text-blue-800"
                   }`}>
-                    {user.role}
+                    {user.role === "VIEWER" ? "VIEWER (READ-ONLY)" : user.role.replace("_", " ")}
                   </span>
                 </td>
                 <td className="p-4 text-right">
@@ -170,8 +174,10 @@ export default function AdminUsersPage() {
               {...register("role")}
               className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
             >
-              <option value="ENGINEER">Engineer</option>
+              <option value="ASSOCIATE">Associate</option>
+              <option value="SENIOR_ASSOCIATE">Senior Associate</option>
               <option value="MANAGER">Manager</option>
+              <option value="VIEWER">Viewer (Read-Only)</option>
             </select>
           </div>
           <div className="flex gap-3 justify-end pt-4">
