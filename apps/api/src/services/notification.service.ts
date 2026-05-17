@@ -1,9 +1,56 @@
 import { prisma } from "../lib/prisma";
-import { Resend } from "resend";
 import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// SMTP Transporter Builder
+const getTransporter = () => {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!host || !user || !pass) {
+    logger.warn("SMTP credentials are not fully configured in .env. Email dispatch will log to console.");
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465, // SSL for 465, TLS/STARTTLS for others
+    auth: { user, pass },
+    tls: {
+      rejectUnauthorized: false // Avoid self-signed/domain trust issues in secure resort internal intranets
+    }
+  });
+};
+
+// Unified Email Sender Helper
+export const sendEmail = async (options: { to: string[]; subject: string; html: string; attachments?: any[] }) => {
+  const transporter = getTransporter();
+  const fromHeader = process.env.SMTP_FROM || `"Khyber IT Portal" <${process.env.SMTP_USER || "noreply@khyberhotels.com"}>`;
+
+  if (!transporter) {
+    logger.warn({ to: options.to, subject: options.subject }, "EMAIL LOG (SMTP Not Configured)");
+    return { success: false, error: "SMTP not configured" };
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: fromHeader,
+      to: options.to.join(", "),
+      subject: options.subject,
+      html: options.html,
+      attachments: options.attachments,
+    });
+    logger.info({ messageId: info.messageId }, "Email dispatched successfully via Nodemailer SMTP");
+    return { success: true };
+  } catch (error) {
+    logger.error({ error, to: options.to }, "Nodemailer SMTP dispatch failed");
+    return { success: false, error };
+  }
+};
 
 export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
   const today = new Date();
@@ -11,8 +58,6 @@ export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
   const end = endOfDay(today);
 
   try {
-    // 1. Find the on-duty engineer for this shift
-    // For now, we'll find any user who has an active shift started today
     const activeShift = await prisma.shift.findFirst({
       where: {
         startTime: { gte: start, lte: end },
@@ -26,7 +71,6 @@ export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
       return;
     }
 
-    // 2. Check if they already submitted a report today
     const report = await prisma.report.findFirst({
       where: {
         shiftId: activeShift.id,
@@ -39,9 +83,8 @@ export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
       return;
     }
 
-    // 3. Send Reminder Email
-    const { error } = await resend.emails.send({
-      from: "Khyber IT Portal <onboarding@resend.dev>",
+    // Dispatch Shift Reminder Email
+    await sendEmail({
       to: [activeShift.user.email],
       subject: "Reminder: Shift Report Due",
       html: `
@@ -50,7 +93,7 @@ export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
           <p>Hello ${activeShift.user.name.split(" ")[0]},</p>
           <p>Your <strong>${shiftType}</strong> shift is ending soon. Please remember to submit your end-of-shift report before you leave.</p>
           <p>Submitting your report ensures a smooth handover for the next shift.</p>
-          <a href="${process.env.FRONTEND_URL}/dashboard/reports" 
+          <a href="${process.env.FRONTEND_URL || "https://khyber-it-portal-web.vercel.app"}/dashboard/reports" 
              style="display: inline-block; padding: 10px 20px; background-color: #004d40; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 10px;">
              Submit Report Now
           </a>
@@ -59,25 +102,36 @@ export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
         </div>
       `
     });
-
-    if (error) {
-      logger.error({ error }, "Failed to send shift reminder email");
-    } else {
-      logger.info(`Shift reminder sent to ${activeShift.user.email}`);
-    }
   } catch (error) {
     logger.error({ error }, "Error in sendShiftReminder service");
   }
 };
 
-export const sendHandoverNotification = async (engineerName: string, content: string) => {
+export const sendHandoverNotification = async (engineerName: string, content: string, reportId: string, customRecipients?: string[]) => {
   const managerEmail = process.env.MANAGER_EMAIL;
-  if (!managerEmail) return;
+  if (!managerEmail && (!customRecipients || customRecipients.length === 0)) return;
 
   try {
-    const recipients = managerEmail.split(",").map(e => e.trim());
-    const { error } = await resend.emails.send({
-      from: "Khyber IT Portal <onboarding@resend.dev>",
+    const recipients = customRecipients && customRecipients.length > 0
+      ? customRecipients
+      : managerEmail!.split(",").map(e => e.trim());
+
+    // Generate single PDF report to attach dynamically
+    let attachments: any[] = [];
+    try {
+      const { generateSingleReportPDF } = require("./pdf.service");
+      const pdfBuffer = await generateSingleReportPDF(reportId);
+      attachments = [
+        {
+          filename: `KHY_Handover_Report_${reportId.substring(0, 6)}.pdf`,
+          content: pdfBuffer,
+        }
+      ];
+    } catch (pdfErr) {
+      logger.error({ pdfErr }, "Failed to compile and attach PDF to shift handover email");
+    }
+
+    await sendEmail({
       to: recipients,
       subject: `New Shift Handover Report from ${engineerName}`,
       html: `
@@ -88,14 +142,11 @@ export const sendHandoverNotification = async (engineerName: string, content: st
             ${content}
           </div>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #666;">View full stats on the <a href="${process.env.FRONTEND_URL}/dashboard/reports">Khyber IT Portal</a>.</p>
+          <p style="font-size: 12px; color: #666;">A copy of the compiled PDF report is attached to this email. You can also view it on the <a href="${process.env.FRONTEND_URL || "https://khyber-it-portal-web.vercel.app"}/dashboard/reports">Khyber IT Portal</a>.</p>
         </div>
-      `
+      `,
+      attachments
     });
-
-    if (error) {
-      logger.error({ error }, "Failed to send handover notification email");
-    }
   } catch (error) {
     logger.error({ error }, "Error in sendHandoverNotification service");
   }
@@ -107,8 +158,7 @@ export const sendCriticalIssueEmail = async (issue: any) => {
 
   try {
     const recipients = managerEmail.split(",").map(e => e.trim());
-    const { error } = await resend.emails.send({
-      from: "Khyber IT Portal <onboarding@resend.dev>",
+    await sendEmail({
       to: recipients,
       subject: `🚨 CRITICAL Incident Reported: ${issue.title}`,
       html: `
@@ -126,10 +176,6 @@ export const sendCriticalIssueEmail = async (issue: any) => {
         </div>
       `
     });
-
-    if (error) {
-      logger.error({ error }, "Failed to send critical issue email");
-    }
   } catch (error) {
     logger.error({ error }, "Error in sendCriticalIssueEmail service");
   }
@@ -141,8 +187,7 @@ export const sendEscalationEmail = async (issueTitle: string, escalation: any, e
 
   try {
     const recipients = managerEmail.split(",").map(e => e.trim());
-    const { error } = await resend.emails.send({
-      from: "Khyber IT Portal <onboarding@resend.dev>",
+    await sendEmail({
       to: recipients,
       subject: `⚠️ ESCALATION LOGGED: ${issueTitle}`,
       html: `
@@ -161,10 +206,6 @@ export const sendEscalationEmail = async (issueTitle: string, escalation: any, e
         </div>
       `
     });
-
-    if (error) {
-      logger.error({ error }, "Failed to send escalation email");
-    }
   } catch (error) {
     logger.error({ error }, "Error in sendEscalationEmail service");
   }

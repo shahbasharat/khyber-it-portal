@@ -148,12 +148,26 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       doc.fillColor("#333333").fontSize(8);
 
       checklistResponses.forEach((res, index) => {
+        // Dynamic Page Wrap Check
+        if (currentY > 730) {
+          doc.addPage();
+          
+          // Re-draw headers on new page
+          doc.rect(40, 40, 515, 18).fill("#19433E");
+          doc.fillColor("#FDFBF7").fontSize(8).font("Helvetica-Bold");
+          doc.text("TASK DESCRIPTION", 50, 45);
+          doc.text("CATEGORY", 280, 45);
+          doc.text("STATUS", 480, 45);
+          
+          currentY = 63;
+        }
+
         // Alternating background colors
         if (index % 2 === 0) {
           doc.rect(40, currentY, 515, 16).fill("#FAF9F6");
         }
         
-        doc.fillColor("#333333").font("Helvetica").text(res.checklistItem.title, 50, currentY + 4);
+        doc.fillColor("#333333").font("Helvetica").fontSize(8).text(res.checklistItem.title, 50, currentY + 4);
         doc.text(res.checklistItem.category.toUpperCase(), 280, currentY + 4);
         
         if (res.completed) {
@@ -170,7 +184,11 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       const pendingIssues = issues.filter((i) => i.status !== "RESOLVED");
 
       // --- SECTION 3: RESOLVED INCIDENTS LOG ---
-      doc.moveDown(1);
+      if (currentY > 700) {
+        doc.addPage();
+        currentY = 40;
+      }
+
       doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("3. Shift Incidents Log (Resolved)", 40, currentY + 15);
       
       const issuesY = currentY + 33;
@@ -189,6 +207,17 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
         issueY += 18;
       } else {
         resolvedIssues.forEach((issue, index) => {
+          if (issueY > 730) {
+            doc.addPage();
+            doc.rect(40, 40, 515, 18).fill("#19433E");
+            doc.fillColor("#FDFBF7").fontSize(8).font("Helvetica-Bold");
+            doc.text("TICKET NO", 50, 45);
+            doc.text("TITLE / DESCRIPTION", 130, 45);
+            doc.text("PRIORITY", 340, 45);
+            doc.text("STATUS", 440, 45);
+            issueY = 63;
+          }
+
           if (index % 2 === 0) {
             doc.rect(40, issueY, 515, 20).fill("#FAF9F6");
           }
@@ -196,7 +225,6 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
           doc.fillColor("#333333").font("Helvetica-Bold").text(`KHY-${issue.id.substring(0,4).toUpperCase()}`, 50, issueY + 6);
           doc.font("Helvetica").text(issue.title, 130, issueY + 6, { width: 200, height: 10 });
           
-          // Priority Colors
           if (issue.priority === "CRITICAL" || issue.priority === "HIGH") {
             doc.fillColor("#C62828").font("Helvetica-Bold").text(issue.priority, 340, issueY + 6);
           } else {
@@ -210,7 +238,11 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       }
 
       // --- SECTION 4: PENDING FOLLOW-UP ACTIONS ---
-      doc.moveDown(1);
+      if (issueY > 700) {
+        doc.addPage();
+        issueY = 40;
+      }
+
       doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("4. Pending & Follow-up Actions", 40, issueY + 15);
       
       const pendingY = issueY + 33;
@@ -229,6 +261,17 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
         pY += 18;
       } else {
         pendingIssues.forEach((issue, index) => {
+          if (pY > 730) {
+            doc.addPage();
+            doc.rect(40, 40, 515, 18).fill("#19433E");
+            doc.fillColor("#FDFBF7").fontSize(8).font("Helvetica-Bold");
+            doc.text("TICKET NO", 50, 45);
+            doc.text("PENDING ISSUE / REMARKS", 130, 45);
+            doc.text("PRIORITY", 340, 45);
+            doc.text("CURRENT STATE", 440, 45);
+            pY = 63;
+          }
+
           if (index % 2 === 0) {
             doc.rect(40, pY, 515, 20).fill("#FAF9F6");
           }
@@ -258,7 +301,11 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       }
 
       // --- SECTION 5: HANDOVER NOTES ---
-      doc.moveDown(1);
+      if (pY > 670) {
+        doc.addPage();
+        pY = 40;
+      }
+
       doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("5. Handover & Shift Notes", 40, pY + 15);
       
       const notesY = pY + 33;
@@ -273,8 +320,12 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       );
 
       // --- SIGNATURE FOOTER PANEL ---
-      doc.moveDown(2);
-      const footerY = notesY + 115;
+      let footerY = notesY + 115;
+      if (footerY > 730) {
+        doc.addPage();
+        footerY = 60;
+      }
+
       doc.strokeColor("#E0E0E0").lineWidth(0.5).moveTo(40, footerY).lineTo(555, footerY).stroke();
       
       doc.fontSize(8).fillColor("#777777");

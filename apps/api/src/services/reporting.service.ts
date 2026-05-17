@@ -1,10 +1,8 @@
 import { prisma } from "../lib/prisma";
 import { subDays, startOfDay, endOfDay, format } from "date-fns";
 import PDFDocument from "pdfkit";
-import { Resend } from "resend";
 import logger from "../lib/logger";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendEmail } from "./notification.service";
 
 export const generateWeeklySummary = async () => {
   const today = new Date();
@@ -100,8 +98,7 @@ export const sendWeeklyReportEmail = async (pdfBuffer: Buffer) => {
   
   try {
     const recipients = managerEmail.split(",").map(e => e.trim());
-    const { data, error } = await resend.emails.send({
-      from: "Khyber IT Portal <onboarding@resend.dev>",
+    const res = await sendEmail({
       to: recipients,
       subject: `Weekly IT Operations Report - ${format(new Date(), "PP")}`,
       html: `
@@ -121,12 +118,12 @@ export const sendWeeklyReportEmail = async (pdfBuffer: Buffer) => {
       ],
     });
 
-    if (error) {
-      logger.error({ error }, "Failed to send weekly report email");
-      return { success: false, error };
+    if (!res.success) {
+      logger.error({ error: res.error }, "Failed to send weekly report email");
+      return { success: false, error: res.error };
     }
 
-    return { success: true, data };
+    return { success: true };
   } catch (error) {
     logger.error({ error }, "Unexpected error sending weekly report");
     return { success: false, error };

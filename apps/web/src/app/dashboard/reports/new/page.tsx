@@ -11,19 +11,24 @@ interface ReportFormData {
   content: string;
   usersSupported?: number;
   downtime?: number;
+  recipientEmails?: string;
 }
 
 export default function NewShiftReportPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ReportFormData>();
+  const { register, handleSubmit, formState: { errors } } = useForm<ReportFormData>({
+    defaultValues: {
+      recipientEmails: "itkhyber@gmail.com"
+    }
+  });
 
   const onSubmit = async (data: ReportFormData) => {
     setIsSubmitting(true);
     try {
       await api.post(`/reports`, data);
-      alert("✓ Handover Report Submitted Successfully! A copy has been emailed to itkhyber@gmail.com.");
+      alert(`✓ Handover Report Submitted Successfully! A PDF copy has been emailed to ${data.recipientEmails || "itkhyber@gmail.com"}.`);
       router.push(`/dashboard/reports`);
     } catch (error) {
       console.error("Failed to submit shift report", error);
@@ -82,9 +87,20 @@ export default function NewShiftReportPage() {
             </div>
           </div>
 
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-slate-dark">Recipient Emails (comma-separated)</label>
+            <input
+              type="text"
+              {...register("recipientEmails")}
+              placeholder="e.g. itkhyber@gmail.com, manager@khyberhotels.com"
+              className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none text-slate-dark"
+            />
+            <p className="text-xs text-slate-mid">Send the handover shift report and compiled PDF summary to these email addresses immediately.</p>
+          </div>
+
           <div className="bg-fir-green-subtle p-4 rounded-xl border border-fir-green/20">
             <p className="text-sm text-fir-green font-medium">
-              <strong>Note:</strong> Submitting this report will automatically mark your shift as handed over and send the compiled PDF report directly to IT Management at <strong>itkhyber@gmail.com</strong>.
+              <strong>Note:</strong> Submitting this report will automatically mark your shift as handed over and send the compiled PDF report directly to the specified recipient emails.
             </p>
           </div>
 

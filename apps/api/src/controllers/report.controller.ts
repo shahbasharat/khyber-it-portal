@@ -99,17 +99,22 @@ export const getShiftSummary = async (req: Request, res: Response) => {
   }
 };
 
-export const createShiftReport = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user.userId;
-    const { content, usersSupported, downtime } = req.body;
+export const createShiftReport = async (req: any, res: Response) => {
+  const { content, usersSupported, downtime, recipientEmails } = req.body;
+  const userId = req.user.userId;
 
-    if (!content) {
-      return res.status(400).json({ error: "Report content is required" });
+  if (!content) {
+    return res.status(400).json({ error: "Report content is required" });
+  }
+
+  try {
+    // Parse custom recipient emails if passed
+    let customRecipients: string[] | undefined = undefined;
+    if (recipientEmails && typeof recipientEmails === "string" && recipientEmails.trim().length > 0) {
+      customRecipients = recipientEmails.split(",").map(e => e.trim()).filter(e => e.length > 0);
     }
 
     // Find the active shift or create a dummy one for the report
-    // In a real app, shifts would be explicitly started/ended
     let shift = await prisma.shift.findFirst({
       where: { userId, endTime: null },
       orderBy: { startTime: "desc" }
@@ -133,7 +138,7 @@ export const createShiftReport = async (req: Request, res: Response) => {
     // Notify Manager asynchronously
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (user) {
-      notificationService.sendHandoverNotification(user.name, content).catch(console.error);
+      notificationService.sendHandoverNotification(user.name, content, report.id, customRecipients).catch(console.error);
     }
 
     res.status(201).json(report);
@@ -149,7 +154,7 @@ export const sendTestWeeklyReport = async (req: Request, res: Response) => {
     const result = await reportingService.sendWeeklyReportEmail(pdfBuffer as Buffer);
     
     if (result.success) {
-      res.json({ message: "Test report sent successfully", data: result.data });
+      res.json({ message: "Test report sent successfully" });
     } else {
       res.status(500).json({ error: "Failed to send test report", details: result.error });
     }
