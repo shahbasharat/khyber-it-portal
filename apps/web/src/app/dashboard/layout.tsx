@@ -70,12 +70,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Top Header - Mobile Only */}
       <header className="md:hidden h-14 bg-white border-b border-slate-border/50 flex items-center justify-between px-4 sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L4 14H20L12 2Z" fill="#C5A880" />
-            <path d="M12 6L7 14H17L12 6Z" fill="#19433E" />
-            <path d="M12 10L9 14H15L12 10Z" fill="#C5A880" />
-            <rect x="11" y="14" width="2" height="6" fill="#19433E" />
-          </svg>
+          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-slate-border/50 overflow-hidden shrink-0 p-0.5">
+            <img src="/logo.png" alt="The Khyber Logo" className="w-full h-full object-contain" />
+          </div>
           <div className="flex flex-col">
             <span className="font-display font-bold text-fir-green text-xs uppercase tracking-wider leading-none">THE KHYBER</span>
             <span className="text-[8px] font-sans font-semibold text-antique-gold uppercase tracking-widest leading-none mt-0.5">IT Operations</span>
@@ -101,12 +98,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="hidden md:flex flex-col w-60 bg-white border-r border-slate-border/50 fixed h-full z-40">
         <div className="h-16 flex items-center px-6 border-b border-slate-border/50">
           <div className="flex items-center gap-2.5">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L4 14H20L12 2Z" fill="#C5A880" />
-              <path d="M12 6L7 14H17L12 6Z" fill="#19433E" />
-              <path d="M12 10L9 14H15L12 10Z" fill="#C5A880" />
-              <rect x="11" y="14" width="2" height="6" fill="#19433E" />
-            </svg>
+            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-slate-border/50 overflow-hidden shrink-0 p-0.5">
+              <img src="/logo.png" alt="The Khyber Logo" className="w-full h-full object-contain" />
+            </div>
             <div className="flex flex-col">
               <span className="font-display font-bold text-fir-green text-sm uppercase tracking-wider leading-none">THE KHYBER</span>
               <span className="text-[9px] font-sans font-semibold text-antique-gold uppercase tracking-widest leading-none mt-0.5">IT Operations</span>

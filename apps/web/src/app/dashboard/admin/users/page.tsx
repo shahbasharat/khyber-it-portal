@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { Trash2, UserPlus, Shield, User as UserIcon } from "lucide-react";
+import { Trash2, UserPlus, Shield, User as UserIcon, Edit } from "lucide-react";
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
 
@@ -21,6 +21,35 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const currentUser = useAuthStore(state => state.user);
+
+  // Edit User States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState<"MANAGER" | "ENGINEER" | "SENIOR_ASSOCIATE" | "ASSOCIATE" | "VIEWER">("ASSOCIATE");
+  const [editPassword, setEditPassword] = useState("");
+
+  const handleEditClick = (user: User) => {
+    setEditingUser(user);
+    setEditName(user.name);
+    setEditRole(user.role as any);
+    setEditPassword("");
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    try {
+      const data: any = { name: editName, role: editRole };
+      if (editPassword) data.password = editPassword;
+      await api.put(`/users/${editingUser.id}`, data);
+      setIsEditModalOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to update user");
+    }
+  };
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
@@ -120,7 +149,14 @@ export default function AdminUsersPage() {
                     {user.role === "VIEWER" ? "VIEWER (READ-ONLY)" : user.role.replace("_", " ")}
                   </span>
                 </td>
-                <td className="p-4 text-right">
+                <td className="p-4 text-right flex justify-end gap-2">
+                  <button
+                    onClick={() => handleEditClick(user)}
+                    className="p-2 rounded-lg text-slate-mid hover:text-fir-green hover:bg-emerald-50 transition-colors"
+                    title="Edit user"
+                  >
+                    <Edit size={18} />
+                  </button>
                   <button
                     onClick={() => handleDelete(user.id)}
                     disabled={user.id === currentUser?.id}
@@ -193,6 +229,72 @@ export default function AdminUsersPage() {
               className="px-4 py-2 font-medium bg-fir-green text-white hover:bg-fir-green-light rounded-lg transition-colors"
             >
               Create User
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit User">
+        <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-dark mb-1">Full Name</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
+              placeholder="e.g. John Doe"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-mid mb-1">Email Address (Read-Only)</label>
+            <input
+              type="email"
+              value={editingUser?.email || ""}
+              disabled
+              className="w-full px-3 py-2 rounded-lg border border-slate-border bg-slate-50 text-slate-mid cursor-not-allowed outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-dark mb-1">Role</label>
+            <select
+              value={editRole}
+              onChange={(e) => setEditRole(e.target.value as any)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
+            >
+              <option value="ASSOCIATE">Associate</option>
+              <option value="SENIOR_ASSOCIATE">Senior Associate</option>
+              <option value="MANAGER">Manager</option>
+              <option value="VIEWER">Viewer (Read-Only)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-dark mb-1">
+              New Password <span className="text-[10px] text-slate-mid italic">(Optional - leave blank to keep current)</span>
+            </label>
+            <input
+              type="password"
+              value={editPassword}
+              onChange={(e) => setEditPassword(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
+              placeholder="Enter new password to reset"
+            />
+          </div>
+          <div className="flex gap-3 justify-end pt-4">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-4 py-2 font-medium text-slate-mid hover:bg-slate-50 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 font-medium bg-fir-green text-white hover:bg-fir-green-light rounded-lg transition-colors"
+            >
+              Save Changes
             </button>
           </div>
         </form>

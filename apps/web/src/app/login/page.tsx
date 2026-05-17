@@ -45,13 +45,8 @@ export default function LoginPage() {
         
         {/* 1. BRAND LOGO */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-[#19433E] rounded-full flex items-center justify-center border-2 border-antique-gold shadow-md mb-4">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L4 14H20L12 2Z" fill="#C5A880" />
-              <path d="M12 6L7 14H17L12 6Z" fill="#19433E" />
-              <path d="M12 10L9 14H15L12 10Z" fill="#C5A880" />
-              <rect x="11" y="14" width="2" height="6" fill="#19433E" />
-            </svg>
+          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-2 border-antique-gold shadow-md mb-4 overflow-hidden p-0.5">
+            <img src="/logo.png" alt="The Khyber Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="font-display font-extrabold text-fir-green text-2xl uppercase tracking-wider leading-none">THE KHYBER</h1>
           <p className="text-[10px] font-sans font-bold text-antique-gold uppercase tracking-widest leading-none mt-1.5">IT Operations Portal</p>
