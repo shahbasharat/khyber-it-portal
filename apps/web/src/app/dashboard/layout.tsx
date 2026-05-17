@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon, Key } from "lucide-react";
+import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon, Key, MoreHorizontal } from "lucide-react";
 import { api } from "@/lib/api";
 import { NotificationBell } from "@/app/components/NotificationBell";
 import { OfflineBanner } from "@/app/components/OfflineBanner";
@@ -16,6 +16,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Change Password States
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -254,7 +256,62 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen(true)}
+          className={`flex flex-col items-center justify-center w-full h-full gap-1 ${
+            isMobileMenuOpen ? "text-fir-green" : "text-slate-mid"
+          }`}
+        >
+          <MoreHorizontal size={24} />
+          <span className="text-[10px] font-medium">More</span>
+        </button>
       </nav>
+
+      {/* Mobile slide-up More menu overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-50 md:hidden bg-slate-dark/40 backdrop-blur-sm animate-in fade-in duration-200" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <div 
+            className="fixed bottom-0 left-0 w-full bg-white rounded-t-3xl shadow-2xl p-6 border-t border-slate-border/50 flex flex-col gap-4 animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-border/30 pb-3">
+              <span className="text-sm font-bold text-slate-dark font-display uppercase tracking-wider">More Operations</span>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-slate-mid hover:text-slate-dark text-xs font-bold bg-cream px-3 py-1 rounded-full border border-slate-border/40 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4 py-2">
+              {navLinks.slice(4).map((link) => {
+                const isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href));
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${
+                      isActive 
+                        ? "bg-fir-green-subtle border-fir-green text-fir-green shadow-xs" 
+                        : "bg-cream/45 border-slate-border/30 text-slate-dark hover:bg-cream"
+                    }`}
+                  >
+                    <Icon size={22} className="mb-1.5" />
+                    <span className="text-[10px] font-bold text-center leading-none">{link.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Change Password Modal */}
       <Modal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} title="Change Your Password">
