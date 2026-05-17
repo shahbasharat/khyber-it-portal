@@ -149,7 +149,7 @@ export default function ChecklistPage() {
       </div>
 
       {/* Checklist Table */}
-      <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-fir-green text-white">
@@ -229,7 +229,7 @@ export default function ChecklistPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-base border border-slate-border/50 overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-dark text-white text-xs">

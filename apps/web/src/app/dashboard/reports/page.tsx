@@ -145,33 +145,33 @@ export default function ReportsPage() {
           <h2 className="text-3xl font-bold text-slate-dark font-display">IT Operational Shift Report</h2>
           <p className="text-slate-mid">Export, print, or review today's complete IT operational metrics.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
           <Link 
             href="/dashboard/reports/new"
-            className="bg-fir-green text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-fir-green/90 transition-all shadow-sm font-bold text-sm"
+            className="flex-1 md:flex-initial bg-fir-green text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-fir-green/90 transition-all shadow-sm font-bold text-xs md:text-sm shrink-0"
           >
-            <FileText size={18} />
-            Submit Handover
+            <FileText size={16} className="shrink-0" />
+            <span className="truncate">Submit Handover</span>
           </Link>
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2.5 border border-slate-border text-slate-dark bg-white rounded-xl hover:bg-slate-50 transition-all font-bold text-sm shadow-sm"
+            className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 border border-slate-border text-slate-dark bg-white rounded-xl hover:bg-slate-50 transition-all font-bold text-xs md:text-sm shadow-sm shrink-0"
           >
-            <Printer size={18} /> Print Sheet
+            <Printer size={16} className="shrink-0" /> <span className="truncate">Print Sheet</span>
           </button>
           <button 
             onClick={handleExportPDF}
             disabled={exporting}
-            className="flex items-center gap-2 px-5 py-2.5 bg-antique-gold hover:bg-antique-gold-dark text-white rounded-xl transition-all font-bold text-sm shadow-sm disabled:opacity-55"
+            className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-antique-gold hover:bg-antique-gold-dark text-white rounded-xl transition-all font-bold text-xs md:text-sm shadow-sm disabled:opacity-55 shrink-0"
           >
             {exporting ? (
               <>
-                <Loader2 className="animate-spin" size={18} />
-                Exporting...
+                <Loader2 className="animate-spin shrink-0" size={16} />
+                <span className="truncate">Exporting...</span>
               </>
             ) : (
               <>
-                <Download size={18} /> Export PDF
+                <Download size={16} className="shrink-0" /> <span className="truncate">Export PDF</span>
               </>
             )}
           </button>
@@ -183,7 +183,7 @@ export default function ReportsPage() {
         
         {/* 1. Main Sheet Header */}
         <div className="border-4 double border-[#19433E] p-4 text-center">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-fir-green tracking-wider uppercase font-display border-b-2 border-fir-green pb-2">
+          <h1 className="text-xl md:text-3xl font-extrabold text-fir-green tracking-wider uppercase font-display border-b-2 border-fir-green pb-2">
             Professional IT Shift Handover Report
           </h1>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-left text-sm font-semibold text-slate-dark">
