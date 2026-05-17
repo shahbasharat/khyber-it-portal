@@ -4,10 +4,11 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon } from "lucide-react";
+import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon, Key } from "lucide-react";
 import { api } from "@/lib/api";
 import { NotificationBell } from "@/app/components/NotificationBell";
 import { OfflineBanner } from "@/app/components/OfflineBanner";
+import { Modal } from "@/app/components/Modal";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
@@ -15,6 +16,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  // Change Password States
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwdError, setPwdError] = useState("");
+  const [pwdSuccess, setPwdSuccess] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdError("");
+    setPwdSuccess(false);
+
+    if (newPassword !== confirmPassword) {
+      setPwdError("New passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPwdError("New password must be at least 6 characters long");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      await api.post("/auth/change-password", { currentPassword, newPassword });
+      setPwdSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => {
+        setIsPasswordModalOpen(false);
+        setPwdSuccess(false);
+      }, 1500);
+    } catch (err: any) {
+      setPwdError(err.response?.data?.error || "Failed to change password");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -87,8 +130,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
           </button>
           <NotificationBell />
-          <span className="text-sm font-medium text-slate-dark">{user.name.split(" ")[0]}</span>
-          <button onClick={handleLogout} className="text-slate-mid hover:text-color-error">
+          <button 
+            onClick={() => setIsPasswordModalOpen(true)} 
+            className="text-slate-mid hover:text-antique-gold p-1"
+            title="Change Password"
+          >
+            <Key size={18} />
+          </button>
+          <button onClick={handleLogout} className="text-slate-mid hover:text-color-error p-1">
             <LogOut size={20} />
           </button>
         </div>
@@ -135,9 +184,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="text-sm font-semibold text-slate-dark">{user.name}</span>
               <span className="text-xs text-slate-mid">{user.role}</span>
             </div>
-            <button onClick={handleLogout} className="text-slate-mid hover:text-color-error p-2">
-              <LogOut size={20} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setIsPasswordModalOpen(true)} 
+                className="text-slate-mid hover:text-antique-gold p-2 transition-colors rounded-lg hover:bg-cream"
+                title="Change Password"
+              >
+                <Key size={18} />
+              </button>
+              <button 
+                onClick={handleLogout} 
+                className="text-slate-mid hover:text-color-error p-2 transition-colors rounded-lg hover:bg-red-50"
+                title="Log Out"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -193,6 +255,72 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           );
         })}
       </nav>
+
+      {/* Change Password Modal */}
+      <Modal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} title="Change Your Password">
+        <form onSubmit={handlePasswordChange} className="space-y-4 mt-4">
+          {pwdError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-3.5 py-2.5 rounded-xl text-xs font-semibold">
+              {pwdError}
+            </div>
+          )}
+          {pwdSuccess && (
+            <div className="bg-green-50 border border-green-200 text-green-800 px-3.5 py-2.5 rounded-xl text-xs font-semibold">
+              🎉 Password updated successfully!
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-slate-dark mb-1">Current Password</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-dark mb-1">New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
+              placeholder="•••••••• (Min 6 characters)"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-dark mb-1">Confirm New Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <div className="flex gap-3 justify-end pt-4">
+            <button
+              type="button"
+              disabled={isSavingPassword}
+              onClick={() => setIsPasswordModalOpen(false)}
+              className="px-4 py-2 font-medium text-slate-mid hover:bg-slate-50 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSavingPassword}
+              className="px-4 py-2 font-medium bg-fir-green text-white hover:bg-fir-green-light rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSavingPassword ? "Updating..." : "Update Password"}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -159,3 +159,39 @@ export const getMe = async (req: any, res: Response) => {
     res.status(500).json({ error: "Failed to fetch user" });
   }
 };
+
+export const changePassword = async (req: any, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current password and new password are required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Incorrect current password" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    logger.info({ userId: user.id }, "Password changed successfully");
+    res.json({ success: true });
+  } catch (error) {
+    logger.error({ error }, "Failed to change password");
+    res.status(500).json({ error: "Failed to change password" });
+  }
+};
