@@ -417,18 +417,61 @@ export default function IssuesPage() {
               <h5 className="font-bold text-slate-dark text-sm border-b border-slate-border/30 pb-2">Update Incident Status</h5>
               
               <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-4">
-                  <label className="text-xs font-bold text-slate-mid uppercase w-24">Select Status:</label>
-                  <select
-                    value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value as any)}
-                    className="flex-1 p-2.5 bg-cream border border-slate-border/50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-fir-green"
-                  >
-                    <option value="OPEN">⭕ Open</option>
-                    <option value="IN_PROGRESS">🟡 In Progress</option>
-                    <option value="RESOLVED">🟢 Resolved</option>
-                    <option value="ESCALATED">🚨 Escalated to Vendor</option>
-                  </select>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-mid uppercase">Incident Status</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNewStatus("OPEN")}
+                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                        newStatus === "OPEN"
+                          ? "bg-slate-100 border-slate-400 text-slate-800 shadow-sm"
+                          : "bg-white border-slate-border text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      <AlertCircle size={14} className={newStatus === "OPEN" ? "text-slate-700" : "text-slate-400"} />
+                      Open
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setNewStatus("IN_PROGRESS")}
+                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                        newStatus === "IN_PROGRESS"
+                          ? "bg-amber-50 border-antique-gold text-amber-900 shadow-sm"
+                          : "bg-white border-slate-border text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Clock size={14} className={newStatus === "IN_PROGRESS" ? "text-antique-gold" : "text-slate-400"} />
+                      In Progress
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setNewStatus("RESOLVED")}
+                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                        newStatus === "RESOLVED"
+                          ? "bg-green-50/70 border-green-600 text-green-900 shadow-sm"
+                          : "bg-white border-slate-border text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      <CheckCircle size={14} className={newStatus === "RESOLVED" ? "text-green-600" : "text-slate-400"} />
+                      Resolved
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setNewStatus("ESCALATED")}
+                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                        newStatus === "ESCALATED"
+                          ? "bg-red-50 border-red-500 text-red-900 shadow-sm"
+                          : "bg-white border-slate-border text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      <ArrowUpCircle size={14} className={newStatus === "ESCALATED" ? "text-red-500" : "text-slate-400"} />
+                      Escalated
+                    </button>
+                  </div>
                 </div>
 
                 {/* Conditional Fields based on newStatus selection */}
