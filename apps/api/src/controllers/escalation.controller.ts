@@ -26,11 +26,39 @@ export const updateEscalationStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const userId = (req as any).user.userId;
 
-    const escalation = await (prisma as any).escalation.update({
-      where: { id },
-      data: { status }
+    const currentEscalation = await (prisma as any).escalation.findUnique({
+      where: { id }
     });
+    
+    if (!currentEscalation) {
+      return res.status(404).json({ error: "Escalation not found" });
+    }
+
+    const parentIssueStatus = status === "RESOLVED" ? "RESOLVED" : "ESCALATED";
+
+    const [escalation] = await prisma.$transaction([
+      (prisma as any).escalation.update({
+        where: { id },
+        data: { status }
+      }),
+      prisma.issue.update({
+        where: { id: currentEscalation.issueId },
+        data: { status: parentIssueStatus }
+      }),
+      ...(status === "RESOLVED"
+        ? [
+            (prisma as any).issueNote.create({
+              data: {
+                content: "Vendor resolved the escalated issue successfully.",
+                issueId: currentEscalation.issueId,
+                authorId: userId
+              }
+            })
+          ]
+        : [])
+    ]);
 
     res.json(escalation);
   } catch (error) {
