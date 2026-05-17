@@ -26,27 +26,39 @@ async function main() {
     },
   });
 
-  // Upsert Engineer 1
+  // Upsert Basharat (Senior Associate)
   await prisma.user.upsert({
     where: { email: "sbasharat577@gmail.com" },
-    update: {},
+    update: { role: "SENIOR_ASSOCIATE" },
     create: {
       email: "sbasharat577@gmail.com",
       name: "Basharat",
       passwordHash,
-      role: "ENGINEER",
+      role: "SENIOR_ASSOCIATE",
     },
   });
 
-  // Upsert Engineer 2
+  // Upsert Syed Asrar (Senior Associate)
   await prisma.user.upsert({
     where: { email: "itengineer2.gulmarg@khyberhotels.com" },
-    update: {},
+    update: { role: "SENIOR_ASSOCIATE" },
     create: {
       email: "itengineer2.gulmarg@khyberhotels.com",
-      name: "IT Engineer 2",
+      name: "Syed Asrar",
       passwordHash,
-      role: "ENGINEER",
+      role: "SENIOR_ASSOCIATE",
+    },
+  });
+
+  // Upsert General Manager (Viewer - Read Only)
+  await prisma.user.upsert({
+    where: { email: "gm.gulmarg@khyberhotels.com" },
+    update: {},
+    create: {
+      email: "gm.gulmarg@khyberhotels.com",
+      name: "Vinit Chhabra",
+      passwordHash,
+      role: "VIEWER",
     },
   });
 

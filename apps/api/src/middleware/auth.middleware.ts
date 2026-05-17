@@ -19,7 +19,25 @@ export const requireAuth = (req: any, res: any, next: any) => {
   try {
     const payload = jwt.verify(token, secret) as { userId: string };
     req.user = payload;
-    next();
+
+    // Strict write-prevention block for VIEWER (read-only) accounts
+    if (["POST", "PUT", "DELETE", "PATCH"].includes(req.method)) {
+      const { prisma } = require("../lib/prisma");
+      prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { role: true }
+      }).then((user: any) => {
+        if (user?.role === "VIEWER") {
+          return res.status(403).json({ error: "Forbidden: Viewer account is read-only and cannot modify data" });
+        }
+        next();
+      }).catch((err: any) => {
+        logger.error({ err }, "Failed to verify VIEWER role write protection");
+        res.status(500).json({ error: "Internal Server Error" });
+      });
+    } else {
+      next();
+    }
   } catch (error) {
     return res.status(401).json({ error: "Token invalid or expired" });
   }
