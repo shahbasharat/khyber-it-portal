@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
-import { ClipboardList, Plus, Loader2, Clock, User as UserIcon, Activity, Wifi, Database, Tv, Lock, RefreshCw, Radio } from "lucide-react";
+import { ClipboardList, Plus, Loader2, Clock, User as UserIcon, Activity, Wifi, Database, Tv, Lock, RefreshCw, Radio, Trash2 } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 interface LogEntry {
   id: string;
@@ -21,6 +22,7 @@ interface LogFormData {
 }
 
 interface Heartbeat {
+  id: string;
   name: string;
   ip: string;
   latency: number;
@@ -29,17 +31,36 @@ interface Heartbeat {
   category: string;
 }
 
+interface DeviceFormData {
+  name: string;
+  ip: string;
+  category: string;
+}
+
 export default function ServerRoomPage() {
+  const { user } = useAuthStore();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [heartbeats, setHeartbeats] = useState<Heartbeat[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchingHeartbeats, setFetchingHeartbeats] = useState(true);
+  
+  // Modals and Submit States
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddingDevice, setIsAddingDevice] = useState(false);
 
+  // Door Logs Form
   const { register, handleSubmit, reset, formState: { errors } } = useForm<LogFormData>({
     defaultValues: {
       entryTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+    }
+  });
+
+  // Network Devices Form
+  const { register: registerDevice, handleSubmit: handleDeviceSubmit, reset: resetDevice, formState: { errors: deviceErrors } } = useForm<DeviceFormData>({
+    defaultValues: {
+      category: "INTERNET"
     }
   });
 
@@ -57,6 +78,7 @@ export default function ServerRoomPage() {
   const fetchHeartbeats = async () => {
     try {
       const response = await api.get("/server-room/heartbeat");
+      setHeartbeats(response.data);
       setHeartbeats(response.data);
     } catch (error) {
       console.error("Failed to fetch heartbeats", error);
@@ -87,6 +109,32 @@ export default function ServerRoomPage() {
     }
   };
 
+  const onAddDevice = async (data: DeviceFormData) => {
+    setIsAddingDevice(true);
+    try {
+      await api.post("/server-room/devices", data);
+      setIsDeviceModalOpen(false);
+      resetDevice();
+      fetchHeartbeats();
+    } catch (error) {
+      console.error("Failed to add network device", error);
+      alert("Failed to register device. Make sure the IP is unique.");
+    } finally {
+      setIsAddingDevice(false);
+    }
+  };
+
+  const onDeleteDevice = async (id: string) => {
+    if (!confirm("⚠️ Are you sure you want to remove this network device from the Heartbeat Console?")) return;
+    try {
+      await api.delete(`/server-room/devices/${id}`);
+      fetchHeartbeats();
+    } catch (error) {
+      console.error("Failed to delete network device", error);
+      alert("Failed to remove network device.");
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-64 text-slate-mid">
       <Loader2 className="animate-spin mr-2" /> Loading Server Room Logs...
@@ -105,9 +153,19 @@ export default function ServerRoomPage() {
             </h3>
             <p className="text-slate-mid text-xs mt-1">Real-time pings and diagnostic telemetry of resort-critical core networks.</p>
           </div>
-          <div className="flex items-center gap-2 text-[10px] font-bold text-fir-green uppercase bg-fir-green-subtle px-3 py-1 rounded-full border border-fir-green/20">
-            <Radio size={12} className="animate-ping" />
-            Live Autopilot Connected
+          <div className="flex items-center gap-3">
+            {user?.role === "MANAGER" && (
+              <button 
+                onClick={() => setIsDeviceModalOpen(true)}
+                className="bg-antique-gold hover:bg-antique-gold-dark text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all text-xs font-bold shadow-sm"
+              >
+                <Plus size={14} /> Add Server / IP
+              </button>
+            )}
+            <div className="flex items-center gap-2 text-[10px] font-bold text-fir-green uppercase bg-fir-green-subtle px-3 py-1 rounded-full border border-fir-green/20">
+              <Radio size={12} className="animate-ping" />
+              Live Autopilot Connected
+            </div>
           </div>
         </div>
 
@@ -123,14 +181,25 @@ export default function ServerRoomPage() {
                             server.category === "INTERNET" ? Wifi : Tv;
 
               return (
-                <div key={server.name} className="border border-slate-border/50 bg-cream/20 hover:border-antique-gold/30 rounded-xl p-4 transition-all flex flex-col gap-3">
+                <div key={server.id} className="border border-slate-border/50 bg-cream/20 hover:border-antique-gold/30 rounded-xl p-4 transition-all flex flex-col gap-3 group relative">
                   <div className="flex justify-between items-start">
                     <div className="w-9 h-9 rounded-lg bg-antique-gold/10 text-antique-gold flex items-center justify-center">
                       <Icon size={18} />
                     </div>
-                    <span className="text-[9px] font-bold tracking-widest text-fir-green bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase">
-                      {server.status}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {user?.role === "MANAGER" && (
+                        <button 
+                          onClick={() => onDeleteDevice(server.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-mid hover:text-color-error p-1 rounded-lg hover:bg-slate-100"
+                          title="Remove Device"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                      <span className="text-[9px] font-bold tracking-widest text-fir-green bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase">
+                        {server.status}
+                      </span>
+                    </div>
                   </div>
                   
                   <div>
@@ -257,6 +326,55 @@ export default function ServerRoomPage() {
           </button>
         </form>
       </Modal>
+
+      {/* ➕ REGISTER NETWORK DEVICE MODAL (Visible only to MANAGER) */}
+      {user?.role === "MANAGER" && (
+        <Modal isOpen={isDeviceModalOpen} onClose={() => setIsDeviceModalOpen(false)} title="Register Core Network Device">
+          <form onSubmit={handleDeviceSubmit(onAddDevice)} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-slate-dark">Device Name</label>
+              <input 
+                {...registerDevice("name", { required: "Device name is required" })}
+                placeholder="e.g. Guest Wi-Fi Controller, CCTV NVR"
+                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none transition-all text-slate-dark"
+              />
+              {deviceErrors.name && <span className="text-xs text-color-error">{deviceErrors.name.message}</span>}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-slate-dark">IP Address</label>
+              <input 
+                {...registerDevice("ip", { required: "IP address is required", pattern: { value: /^[0-9.]+$/, message: "Please enter a valid IP address" } })}
+                placeholder="e.g. 10.200.1.50"
+                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none transition-all font-mono text-slate-dark"
+              />
+              {deviceErrors.ip && <span className="text-xs text-color-error">{deviceErrors.ip.message}</span>}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-slate-dark">System Category</label>
+              <select
+                {...registerDevice("category", { required: "Category is required" })}
+                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none transition-all text-slate-dark"
+              >
+                <option value="INTERNET">🌐 Internet Gateway / WAN</option>
+                <option value="DATABASE">🗄️ Database / PMS Server</option>
+                <option value="ACCESS_CONTROL">🔒 Access Control / Door Security</option>
+                <option value="ENTERTAINMENT">📺 Entertainment / IPTV Core</option>
+              </select>
+              {deviceErrors.category && <span className="text-xs text-color-error">{deviceErrors.category.message}</span>}
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={isAddingDevice}
+              className="mt-4 bg-antique-gold hover:bg-antique-gold-dark text-white p-3 rounded-xl font-bold flex justify-center items-center gap-2 transition-all disabled:opacity-50"
+            >
+              {isAddingDevice ? <Loader2 className="animate-spin" size={20} /> : "Register Device"}
+            </button>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

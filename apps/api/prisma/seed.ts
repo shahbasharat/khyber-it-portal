@@ -86,7 +86,23 @@ async function main() {
     });
   }
 
-  console.log("Database seeded successfully with default accounts and 12 checklist items.");
+  // Seed default network devices
+  const defaultDevices = [
+    { name: "Oracle Opera PMS Core", ip: "10.200.1.10", category: "DATABASE", uptime: "99.98%" },
+    { name: "VingCard Key Server", ip: "10.200.1.20", category: "ACCESS_CONTROL", uptime: "99.95%" },
+    { name: "Airtel Primary Fiber Gateway", ip: "1.1.1.1", category: "INTERNET", uptime: "99.85%" },
+    { name: "IPTV Gateway Server", ip: "10.200.1.30", category: "ENTERTAINMENT", uptime: "100%" }
+  ];
+
+  for (const device of defaultDevices) {
+    await (prisma as any).networkDevice.upsert({
+      where: { ip: device.ip },
+      update: { name: device.name, category: device.category, uptime: device.uptime },
+      create: device
+    });
+  }
+
+  console.log("Database seeded successfully with default accounts, checklist items, and core network devices.");
 }
 
 main()
