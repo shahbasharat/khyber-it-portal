@@ -128,6 +128,14 @@ export default function IssuesPage() {
   }, [selectedIssueId]);
 
   const onSubmit = async (data: IssueFormData) => {
+    if (data.priority === "CRITICAL") {
+      const confirmCritical = window.confirm(
+        "Mark as Critical? This will alert the IT Manager immediately via Email and in-app notification."
+      );
+      if (!confirmCritical) {
+        return;
+      }
+    }
     setIsSubmitting(true);
     try {
       await api.post("/issues", data);
@@ -284,36 +292,50 @@ export default function IssuesPage() {
             <p className="text-slate-mid">No active issues found. All systems operational!</p>
           </div>
         ) : (
-          issues.map((issue) => (
-            <div 
-              key={issue.id} 
-              onClick={() => setSelectedIssueId(issue.id)}
-              className="bg-white p-6 rounded-xl shadow-base border border-slate-border/50 hover:border-fir-green/30 transition-all cursor-pointer group"
-            >
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex-1 w-full">
-                  <div className="flex flex-col gap-1.5 mb-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getPriorityColor(issue.priority)}`}>
-                        {issue.priority}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-mid bg-slate-100 px-2 py-0.5 rounded uppercase">
-                        {issue.department}
-                      </span>
+          issues.map((issue) => {
+            const isOverdue = 
+              issue.status !== "RESOLVED" && 
+              (new Date().getTime() - new Date(issue.createdAt).getTime()) > 4 * 60 * 60 * 1000;
+
+            return (
+              <div 
+                key={issue.id} 
+                onClick={() => setSelectedIssueId(issue.id)}
+                className={`p-6 rounded-xl transition-all cursor-pointer group ${
+                  isOverdue 
+                    ? "bg-antique-gold-subtle/10 border-2 border-antique-gold/70 shadow-lg hover:border-antique-gold" 
+                    : "bg-white border border-slate-border/50 shadow-base hover:border-fir-green/30"
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex-1 w-full">
+                    <div className="flex flex-col gap-1.5 mb-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getPriorityColor(issue.priority)}`}>
+                          {issue.priority}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-mid bg-slate-100 px-2 py-0.5 rounded uppercase">
+                          {issue.department}
+                        </span>
+                        {isOverdue && (
+                          <span className="text-[10px] font-bold text-antique-gold bg-antique-gold-subtle border border-antique-gold/40 px-2 py-0.5 rounded uppercase animate-pulse flex items-center gap-1">
+                            ⚠️ Overdue (&gt;4 hrs)
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-dark group-hover:text-fir-green transition-colors leading-snug">
+                        {issue.title}
+                      </h3>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-dark group-hover:text-fir-green transition-colors leading-snug">
-                      {issue.title}
-                    </h3>
+                    <p className="text-slate-mid text-sm mb-3 line-clamp-2">{issue.description}</p>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-slate-mid">
+                      <span className="flex items-center gap-1">
+                        <Clock size={13} />
+                        {new Date(issue.createdAt).toLocaleDateString()}
+                      </span>
+                      <span className="font-medium">Reporter: {issue.reporter.name}</span>
+                    </div>
                   </div>
-                  <p className="text-slate-mid text-sm mb-3 line-clamp-2">{issue.description}</p>
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-slate-mid">
-                    <span className="flex items-center gap-1">
-                      <Clock size={13} />
-                      {new Date(issue.createdAt).toLocaleDateString()}
-                    </span>
-                    <span className="font-medium">Reporter: {issue.reporter.name}</span>
-                  </div>
-                </div>
                 <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start w-full sm:w-auto border-t sm:border-t-0 border-slate-100 pt-2.5 sm:pt-0 mt-2.5 sm:mt-0 gap-2 shrink-0">
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-cream rounded-full border border-slate-border/50 hover:bg-slate-100 transition-colors">
                     {getStatusIcon(issue.status)}
@@ -323,7 +345,8 @@ export default function IssuesPage() {
                 </div>
               </div>
             </div>
-          ))
+          );
+        })
         )}
       </div>
 
@@ -402,19 +425,19 @@ export default function IssuesPage() {
             {/* Header / Info Section */}
             <div className="bg-cream p-4 rounded-xl border border-slate-border/50 flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getPriorityColor(selectedIssue.priority)}`}>
-                  {selectedIssue.priority} Priority
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getPriorityColor(selectedIssue?.priority || "LOW")}`}>
+                  {selectedIssue?.priority} Priority
                 </span>
                 <span className="text-[10px] font-bold text-slate-mid bg-slate-200 px-2 py-0.5 rounded uppercase">
-                  {selectedIssue.department}
+                  {selectedIssue?.department}
                 </span>
               </div>
-              <h4 className="text-lg font-bold text-slate-dark">{selectedIssue.title}</h4>
-              <p className="text-slate-mid text-sm">{selectedIssue.description}</p>
+              <h4 className="text-lg font-bold text-slate-dark">{selectedIssue?.title}</h4>
+              <p className="text-slate-mid text-sm">{selectedIssue?.description}</p>
               <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-mid mt-2 border-t border-slate-border/30 pt-2">
-                <span><strong>Reported:</strong> {new Date(selectedIssue.createdAt).toLocaleString()}</span>
-                <span><strong>Reporter:</strong> {selectedIssue.reporter.name}</span>
-                {selectedIssue.assignee && <span><strong>Assignee:</strong> {selectedIssue.assignee.name}</span>}
+                <span><strong>Reported:</strong> {selectedIssue?.createdAt ? new Date(selectedIssue.createdAt).toLocaleString() : ""}</span>
+                <span><strong>Reporter:</strong> {selectedIssue?.reporter?.name}</span>
+                {selectedIssue?.assignee && <span><strong>Assignee:</strong> {selectedIssue.assignee.name}</span>}
               </div>
             </div>
 
@@ -428,18 +451,18 @@ export default function IssuesPage() {
                     <label className="text-xs font-bold text-slate-mid uppercase flex justify-between items-center">
                       <span>Incident Status Workflow</span>
                       <span className="text-[10px] text-fir-green font-bold normal-case">
-                        Current State: {selectedIssue.status.replace("_", " ")}
+                        Current State: {selectedIssue?.status?.replace("_", " ") || "OPEN"}
                       </span>
                     </label>
                     
                     {/* Beautiful visual helpers based on current status */}
-                    {selectedIssue.status === "RESOLVED" && (
+                    {selectedIssue?.status === "RESOLVED" && (
                       <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-xs font-semibold mb-2 flex items-center gap-2">
                         <CheckCircle size={16} className="text-emerald-600 shrink-0" />
                         This incident is currently marked as RESOLVED & CLOSED.
                       </div>
                     )}
-                    {selectedIssue.status === "ESCALATED" && (
+                    {selectedIssue?.status === "ESCALATED" && (
                       <div className="bg-red-50 border border-red-100 text-red-800 p-3 rounded-xl text-xs font-semibold mb-2 flex items-center gap-2">
                         <ArrowUpCircle size={16} className="text-red-500 shrink-0" />
                         This incident is currently ESCALATED to vendor: {escalatedTo || "Specialist"}
@@ -578,7 +601,7 @@ export default function IssuesPage() {
 
               {/* List of notes */}
               <div className="flex flex-col gap-3 max-h-48 overflow-y-auto pr-1">
-                {selectedIssue.notes.length === 0 ? (
+                {!selectedIssue?.notes || selectedIssue.notes.length === 0 ? (
                   <p className="text-xs text-slate-mid italic py-2">No progress notes added to this incident yet.</p>
                 ) : (
                   selectedIssue.notes.map((note) => (

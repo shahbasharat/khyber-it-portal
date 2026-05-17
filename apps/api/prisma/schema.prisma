@@ -12,6 +12,7 @@ model User {
   passwordHash  String
   name          String
   role          Role           @default(ENGINEER)
+  mustChangePassword Boolean   @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
@@ -54,20 +55,21 @@ model Shift {
 }
 
 model Issue {
-  id          String   @id @default(uuid())
-  title       String
-  description String
-  priority    Priority @default(LOW)
-  status      Status   @default(OPEN)
-  reporterId  String
-  reporter    User     @relation("ReportedIssues", fields: [reporterId], references: [id])
-  assigneeId  String?
-  assignee    User?    @relation("AssignedIssues", fields: [assigneeId], references: [id])
-  department  String   @default("Other")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  notes       IssueNote[]
-  escalation  Escalation?
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  priority      Priority @default(LOW)
+  status        Status   @default(OPEN)
+  guestImpacted Boolean  @default(false)
+  reporterId    String
+  reporter      User     @relation("ReportedIssues", fields: [reporterId], references: [id])
+  assigneeId    String?
+  assignee      User?    @relation("AssignedIssues", fields: [assigneeId], references: [id])
+  department    String   @default("Other")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  notes         IssueNote[]
+  escalation    Escalation?
 }
 
 enum Priority {
@@ -163,6 +165,7 @@ model Escalation {
   escalatedTo    String
   contactDetails String?
   remarks        String?
+  resolutionNote String?
   status         EscalationStatus @default(ACTIVE)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
