@@ -75,9 +75,10 @@ export const sendHandoverNotification = async (engineerName: string, content: st
   if (!managerEmail) return;
 
   try {
+    const recipients = managerEmail.split(",").map(e => e.trim());
     const { error } = await resend.emails.send({
       from: "Khyber IT Portal <onboarding@resend.dev>",
-      to: [managerEmail],
+      to: recipients,
       subject: `New Shift Handover Report from ${engineerName}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #eee; border-radius: 10px;">

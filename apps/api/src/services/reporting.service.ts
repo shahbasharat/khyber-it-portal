@@ -99,9 +99,10 @@ export const sendWeeklyReportEmail = async (pdfBuffer: Buffer) => {
   const managerEmail = process.env.MANAGER_EMAIL || "itkhy@example.com";
   
   try {
+    const recipients = managerEmail.split(",").map(e => e.trim());
     const { data, error } = await resend.emails.send({
       from: "Khyber IT Portal <onboarding@resend.dev>",
-      to: [managerEmail],
+      to: recipients,
       subject: `Weekly IT Operations Report - ${format(new Date(), "PP")}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333;">
