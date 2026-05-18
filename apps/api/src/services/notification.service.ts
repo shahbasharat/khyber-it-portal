@@ -18,27 +18,23 @@ export const sendEmail = async (options: { to: string[]; subject: string; html: 
   }
 
   try {
-    // Dynamically configure transporter based on Brevo vs Gmail credentials
-    let transporterOptions: any = {
-      host: smtpUser.includes("brevo.com") || smtpUser.includes("sendinblue.com") ? "smtp-relay.brevo.com" : smtpHost,
+    // Dynamically configure transporter using explicit STARTTLS settings for maximum cloud compatibility
+    const isBrevo = smtpUser.includes("brevo.com") || smtpUser.includes("sendinblue.com");
+    const host = isBrevo ? "smtp-relay.brevo.com" : smtpHost;
+    
+    const transporterOptions: any = {
+      host,
       port: smtpPort,
-      secure: smtpPort === 465,
+      secure: smtpPort === 465, // false for 587
+      requireTLS: smtpPort === 587, // force STARTTLS
       auth: {
         user: smtpUser,
         pass: smtpPass,
       },
+      tls: {
+        rejectUnauthorized: false // Allow cloud proxies like Railway
+      }
     };
-
-    // If using Gmail credentials, use service helper
-    if ((smtpHost.includes("gmail.com") || smtpUser.includes("gmail.com")) && !smtpUser.includes("brevo.com")) {
-      transporterOptions = {
-        service: "gmail",
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      };
-    }
 
     const transporter = nodemailer.createTransport(transporterOptions);
 
@@ -56,11 +52,11 @@ export const sendEmail = async (options: { to: string[]; subject: string; html: 
     };
 
     const info = await transporter.sendMail(mailOptions);
-    logger.info({ messageId: info.messageId, host: transporterOptions.host || transporterOptions.service }, "Email dispatched successfully via SMTP");
+    logger.info({ messageId: info.messageId, host }, "Email dispatched successfully via SMTP");
     return { success: true };
-  } catch (error) {
-    logger.error({ error, smtpUser }, "SMTP dispatch failed");
-    return { success: false, error: (error as Error).message || error };
+  } catch (error: any) {
+    logger.error({ errMessage: error.message, errCode: error.code, smtpUser }, "SMTP dispatch failed");
+    return { success: false, error: error.message || error };
   }
 };
 
