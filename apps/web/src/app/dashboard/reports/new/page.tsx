@@ -66,23 +66,29 @@ export default function NewShiftReportPage() {
             {errors.content && <span className="text-xs text-color-error font-medium">{errors.content.message}</span>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-slate-dark">Users Supported (Optional)</label>
+              <label className="text-sm font-bold text-slate-dark">Users Supported <span className="text-xs font-normal text-slate-mid">(Optional)</span></label>
+              <p className="text-[11px] text-slate-mid leading-relaxed mb-1">
+                Estimated number of resort staff, hotel guests, or department workstations assisted during this shift (e.g. 20).
+              </p>
               <input
                 type="number"
                 {...register("usersSupported")}
-                placeholder="e.g. 142"
-                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none text-slate-dark"
+                placeholder="e.g. 20"
+                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none text-slate-dark font-medium"
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-slate-dark">Total Downtime - Minutes (Optional)</label>
+              <label className="text-sm font-bold text-slate-dark">Total Downtime <span className="text-xs font-normal text-slate-mid">(Optional)</span></label>
+              <p className="text-[11px] text-slate-mid leading-relaxed mb-1">
+                Cumulative minutes any critical resort system (Jio/CNS lines, Opera PMS, POS, Wi-Fi) was offline (e.g. 15 mins, or 0).
+              </p>
               <input
                 type="number"
                 {...register("downtime")}
                 placeholder="e.g. 15"
-                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none text-slate-dark"
+                className="p-3 bg-cream border border-slate-border/50 rounded-xl focus:ring-2 focus:ring-fir-green outline-none text-slate-dark font-medium"
               />
             </div>
           </div>
