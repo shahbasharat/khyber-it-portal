@@ -28,12 +28,18 @@ export const getDailyChecklist = async (req: any, res: Response) => {
 
     const formattedItems = items.map((item) => {
       const response = item.responses[0];
+      let status = response?.status || "PENDING";
+      if (response?.completed && status === "PENDING") {
+        status = "WORKING";
+      }
+
       return {
         id: item.id,
         title: item.title,
         category: item.category,
         description: item.description,
         completed: !!response?.completed,
+        status,
         remarks: response?.remarks || "",
         completedBy: response?.user?.name || null,
         completedAt: response?.createdAt || null,
@@ -48,7 +54,7 @@ export const getDailyChecklist = async (req: any, res: Response) => {
 
 export const updateChecklistItem = async (req: any, res: Response) => {
   const { itemId } = req.params;
-  const { completed, remarks } = req.body;
+  const { completed, status, remarks } = req.body;
   const userId = req.user.userId;
 
   const today = new Date();
@@ -56,7 +62,6 @@ export const updateChecklistItem = async (req: any, res: Response) => {
   const end = endOfDay(today);
 
   try {
-    // Find or create response for today
     const existingResponse = await prisma.checklistResponse.findFirst({
       where: {
         checklistItemId: itemId as string,
@@ -67,11 +72,21 @@ export const updateChecklistItem = async (req: any, res: Response) => {
       },
     });
 
+    let newStatus = status;
+    let newCompleted = completed;
+
+    if (newStatus !== undefined && newCompleted === undefined) {
+      newCompleted = newStatus === "WORKING";
+    } else if (newCompleted !== undefined && newStatus === undefined) {
+      newStatus = newCompleted ? "WORKING" : "PENDING";
+    }
+
     if (existingResponse) {
       const updated = await prisma.checklistResponse.update({
         where: { id: existingResponse.id },
         data: { 
-          ...(completed !== undefined && { completed }),
+          ...(newCompleted !== undefined && { completed: newCompleted }),
+          ...(newStatus !== undefined && { status: newStatus }),
           ...(remarks !== undefined && { remarks }),
           userId 
         },
@@ -83,13 +98,72 @@ export const updateChecklistItem = async (req: any, res: Response) => {
       data: {
         checklistItemId: itemId,
         userId,
-        completed: completed || false,
+        completed: newCompleted || false,
+        status: newStatus || "PENDING",
         remarks: remarks || "",
       },
     });
 
     res.status(201).json(created);
   } catch (error) {
-    res.status(500).json({ error: "Failed to toggle checklist item" });
+    res.status(500).json({ error: "Failed to update checklist item" });
+  }
+};
+
+export const bulkUpdateChecklistItems = async (req: any, res: Response) => {
+  const { category, status } = req.body;
+  const userId = req.user.userId;
+
+  if (!category || !status) {
+    return res.status(400).json({ error: "Category and status are required" });
+  }
+
+  const today = new Date();
+  const start = startOfDay(today);
+  const end = endOfDay(today);
+
+  try {
+    const items = await prisma.checklistItem.findMany({
+      where: { category },
+      select: { id: true }
+    });
+
+    const completed = status === "WORKING";
+
+    const existingResponses = await prisma.checklistResponse.findMany({
+      where: {
+        checklistItemId: { in: items.map(i => i.id) },
+        createdAt: { gte: start, lte: end }
+      }
+    });
+
+    const existingItemIds = new Set(existingResponses.map(r => r.checklistItemId));
+    const missingItems = items.filter(i => !existingItemIds.has(i.id));
+
+    const transactions = [
+      ...existingResponses.map(r => 
+        prisma.checklistResponse.update({
+          where: { id: r.id },
+          data: { status, completed, userId }
+        })
+      ),
+      ...missingItems.map(i => 
+        prisma.checklistResponse.create({
+          data: {
+            checklistItemId: i.id,
+            userId,
+            completed,
+            status,
+            remarks: ""
+          }
+        })
+      )
+    ];
+
+    await prisma.$transaction(transactions);
+
+    res.json({ success: true, updatedCount: items.length });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to bulk update checklist category" });
   }
 };

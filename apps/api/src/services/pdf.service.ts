@@ -326,7 +326,7 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
         { width: 495, lineGap: 2 }
       );
 
-      // --- SIGNATURE FOOTER PANEL ---
+      // --- FOOTER PANEL ---
       let footerY = notesY + 115;
       if (footerY > 730) {
         doc.addPage();
@@ -335,14 +335,10 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
 
       doc.strokeColor("#E0E0E0").lineWidth(0.5).moveTo(40, footerY).lineTo(555, footerY).stroke();
       
-      doc.fontSize(8).fillColor("#777777");
-      doc.font("Helvetica-Bold").text("Outgoing IT Engineer Signature: ______________________", 40, footerY + 15);
-      doc.font("Helvetica-Bold").text("IT Manager Signature: ________________________", 320, footerY + 15);
-      
       doc.fontSize(7).fillColor("#999999").text(
         "Confidential - Internal IT Operations Only - The Khyber Himalayan Resort & Spa, Gulmarg",
         40,
-        footerY + 35,
+        footerY + 15,
         { align: "center", width: 515 }
       );
 
