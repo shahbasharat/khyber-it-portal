@@ -23,9 +23,9 @@ const getRefreshSecret = () => {
   return secret as jwt.Secret;
 };
 
-const generateTokens = (userId: string) => {
+const generateTokens = (userId: string, role: string) => {
   const accessToken = jwt.sign(
-    { userId },
+    { userId, role },
     getAccessSecret(),
     { expiresIn: "15m" } as jwt.SignOptions
   );
@@ -60,7 +60,7 @@ export const login = async (req: any, res: any, next: any) => {
       return res.status(401).json({ error: "Incorrect username or password" });
     }
 
-    const { accessToken, refreshTokenValue } = generateTokens(user.id);
+    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.role);
 
     // Save refresh token in DB
     await prisma.refreshToken.create({
@@ -120,7 +120,7 @@ export const refresh = async (req: any, res: any, next: any) => {
 
     // Generate new access token
     const accessToken = jwt.sign(
-      { userId: tokenRecord.userId },
+      { userId: tokenRecord.userId, role: tokenRecord.user.role },
       getAccessSecret(),
       { expiresIn: "15m" } as jwt.SignOptions
     );

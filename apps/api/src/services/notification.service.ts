@@ -1,57 +1,48 @@
 import { prisma } from "../lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
+import nodemailer from "nodemailer";
 
-// Unified Email Sender Helper using Brevo's HTTPS REST API (Port 443 - 100% firewall unblocked!)
+// Initialize standard Gmail SMTP transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER || "itkhyber@gmail.com",
+    pass: process.env.SMTP_PASS, // Google App Password
+  },
+});
+
+// Unified Email Sender Helper using Google Gmail SMTP
 export const sendEmail = async (options: { to: string[]; subject: string; html: string; attachments?: any[] }) => {
-  const brevoApiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.SMTP_USER || "itkhyber@gmail.com";
   const senderName = "Khyber IT Operations";
 
-  if (!brevoApiKey) {
-    logger.warn("BREVO_API_KEY is not configured in .env. Email dispatch will log to console.");
-    logger.info({ to: options.to, subject: options.subject }, "EMAIL LOG (SMTP Not Configured)");
-    return { success: false, error: "Brevo API Key not configured" };
+  if (!process.env.SMTP_PASS) {
+    logger.warn("SMTP_PASS is not configured in .env. Email dispatch will log to console.");
+    logger.info({ to: options.to, subject: options.subject }, "EMAIL LOG (Gmail SMTP Not Configured)");
+    return { success: false, error: "SMTP_PASS not configured" };
   }
 
   try {
     const formattedAttachments = options.attachments?.map(att => ({
-      name: att.filename,
-      content: att.content.toString("base64")
+      filename: att.filename,
+      content: att.content
     })) || [];
 
-    const emailPayload: any = {
-      sender: { name: senderName, email: senderEmail },
-      to: options.to.map(email => ({ email })),
+    const mailOptions = {
+      from: `"${senderName}" <${senderEmail}>`,
+      to: options.to.join(", "),
       subject: options.subject,
-      htmlContent: options.html
+      html: options.html,
+      attachments: formattedAttachments
     };
 
-    if (formattedAttachments.length > 0) {
-      emailPayload.attachment = formattedAttachments;
-    }
-
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "accept": "application/json",
-        "api-key": brevoApiKey as string,
-        "content-type": "application/json"
-      } as Record<string, string>,
-      body: JSON.stringify(emailPayload)
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      logger.error({ errText, status: response.status }, "Brevo dispatch failed");
-      return { success: false, error: errText };
-    }
-
-    logger.info("Email dispatched successfully via Brevo HTTPS REST API");
+    const info = await transporter.sendMail(mailOptions);
+    logger.info({ messageId: info.messageId }, "Email dispatched successfully via Gmail SMTP");
     return { success: true };
   } catch (error) {
-    logger.error({ error }, "Brevo dispatch network error");
-    return { success: false, error };
+    logger.error({ error }, "Gmail SMTP dispatch failed");
+    return { success: false, error: (error as Error).message || error };
   }
 };
 

@@ -48,7 +48,7 @@ export const getIssues = async (req: Request, res: Response) => {
 export const getIssueById = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const issue = await (prisma as any).issue.findUnique({
+    const issue = await prisma.issue.findUnique({
       where: { id: id as string },
       include: {
         reporter: { select: { name: true, email: true } },
@@ -128,13 +128,13 @@ export const updateIssue = async (req: Request, res: Response) => {
 
     if (updateData.status === "RESOLVED") {
       // Automatically resolve associated pending escalations
-      await (prisma as any).escalation.updateMany({
+      await prisma.escalation.updateMany({
         where: { issueId: id as string, status: "ACTIVE" },
         data: { status: "RESOLVED" }
       });
 
       if (resolutionNote) {
-        await (prisma as any).issueNote.create({
+        await prisma.issueNote.create({
           data: {
             content: resolutionNote,
             issueId: id as string,
@@ -144,7 +144,7 @@ export const updateIssue = async (req: Request, res: Response) => {
       }
     } else if (updateData.status === "IN_PROGRESS" || updateData.status === "OPEN") {
       // Downgrade associated pending escalations
-      await (prisma as any).escalation.updateMany({
+      await prisma.escalation.updateMany({
         where: { issueId: id as string, status: "ACTIVE" },
         data: { status: "RESOLVED" }
       });
@@ -166,7 +166,7 @@ export const addIssueNote = async (req: Request, res: Response) => {
     const validatedData = CreateIssueNoteSchema.parse(req.body);
     const userId = (req as any).user.userId;
 
-    const note = await (prisma as any).issueNote.create({
+    const note = await prisma.issueNote.create({
       data: {
         content: validatedData.content,
         issueId: id as string,
@@ -192,7 +192,7 @@ export const escalateIssue = async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
 
     const [escalation, issue] = await prisma.$transaction([
-      (prisma as any).escalation.create({
+      prisma.escalation.create({
         data: {
           issueId: id as string,
           escalatedTo: validatedData.escalatedTo,
@@ -204,7 +204,7 @@ export const escalateIssue = async (req: Request, res: Response) => {
         where: { id: id as string },
         data: { status: "ESCALATED" }
       }),
-      (prisma as any).issueNote.create({
+      prisma.issueNote.create({
         data: {
           issueId: id as string,
           authorId: userId,
@@ -232,7 +232,7 @@ export const getCarryOverIssues = async (req: Request, res: Response) => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const carryOver = await (prisma as any).issue.findMany({
+    const carryOver = await prisma.issue.findMany({
       where: {
         status: { not: "RESOLVED" },
         createdAt: { lt: todayStart }

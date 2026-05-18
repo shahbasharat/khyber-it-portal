@@ -17,7 +17,7 @@ export const generateWeeklySummary = async () => {
         where: { createdAt: { gte: start, lte: end } },
         include: { reporter: { select: { name: true } } }
       }),
-      (prisma as any).serverRoomLog.findMany({
+      prisma.serverRoomLog.findMany({
         where: { createdAt: { gte: start, lte: end } }
       }),
       prisma.checklistResponse.findMany({

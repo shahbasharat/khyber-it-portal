@@ -5,6 +5,21 @@ import logger from "../lib/logger";
 import path from "path";
 import fs from "fs";
 
+let cachedLogoPath: string | null = null;
+const getLogoPath = () => {
+  if (cachedLogoPath !== null) return cachedLogoPath;
+  const possibleLogoPaths = [
+    path.join(process.cwd(), "Public/Logo Green.png"),
+    path.join(process.cwd(), "../../Public/Logo Green.png"),
+    path.join(__dirname, "../../../../Public/Logo Green.png"),
+    path.join(process.cwd(), "Public/logo.jpg"),
+    path.join(process.cwd(), "../../Public/logo.jpg"),
+    path.join(__dirname, "../../../../Public/logo.jpg")
+  ];
+  cachedLogoPath = possibleLogoPaths.find((p) => fs.existsSync(p)) || "";
+  return cachedLogoPath;
+};
+
 export const generateSingleReportPDF = async (reportId: string): Promise<Buffer> => {
   try {
     // 1. Fetch Report with its related Shift and User
@@ -65,15 +80,7 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       doc.on("error", reject);
 
       // --- BRAND LOGO / LETTERHEAD COMPILER ---
-      const possibleLogoPaths = [
-        path.join(process.cwd(), "Public/Logo Green.png"),
-        path.join(process.cwd(), "../../Public/Logo Green.png"),
-        path.join(__dirname, "../../../../Public/Logo Green.png"),
-        path.join(process.cwd(), "Public/logo.jpg"),
-        path.join(process.cwd(), "../../Public/logo.jpg"),
-        path.join(__dirname, "../../../../Public/logo.jpg")
-      ];
-      const logoPath = possibleLogoPaths.find((p) => fs.existsSync(p));
+      const logoPath = getLogoPath();
 
       if (logoPath) {
         // Draw crisp luxury logo image

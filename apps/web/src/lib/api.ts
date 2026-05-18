@@ -20,10 +20,9 @@ api.interceptors.request.use((config) => {
       const { enqueueRequest } = require("./offlineQueue");
       enqueueRequest(config.url || "", config.method, config.data);
       
-      // Cancel the request so it doesn't try to go to the server
-      const source = axios.CancelToken.source();
-      config.cancelToken = source.token;
-      source.cancel("offline_queued");
+      const controller = new AbortController();
+      config.signal = controller.signal;
+      controller.abort("offline_queued");
     }
   }
 

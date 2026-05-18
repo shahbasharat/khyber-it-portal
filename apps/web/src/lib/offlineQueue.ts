@@ -43,7 +43,8 @@ export const syncOfflineQueue = async (apiInstance: any) => {
   if (queue.length === 0) return;
 
   console.log(`Syncing ${queue.length} offline actions...`);
-  
+  const remainingQueue: QueuedRequest[] = [];
+
   for (const req of queue) {
     try {
       if (req.method.toLowerCase() === "post") {
@@ -55,9 +56,14 @@ export const syncOfflineQueue = async (apiInstance: any) => {
       }
     } catch (error) {
       console.error(`Failed to sync queued request: ${req.url}`, error);
-      // Keep going or stop depending on criticality. We skip to avoid locking the queue.
+      remainingQueue.push(req);
     }
   }
 
-  clearQueue();
+  if (remainingQueue.length === 0) {
+    clearQueue();
+  } else {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue));
+    window.dispatchEvent(new Event("offline_queue_changed"));
+  }
 };

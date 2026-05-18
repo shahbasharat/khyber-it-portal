@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import logger from "../lib/logger";
+import { prisma } from "../lib/prisma";
 
 export const requireAuth = (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
@@ -17,12 +18,19 @@ export const requireAuth = (req: any, res: any, next: any) => {
   }
 
   try {
-    const payload = jwt.verify(token, secret) as { userId: string };
+    const payload = jwt.verify(token, secret) as { userId: string; role?: string };
     req.user = payload;
 
     // Strict write-prevention block for VIEWER (read-only) accounts
     if (["POST", "PUT", "DELETE", "PATCH"].includes(req.method)) {
-      const { prisma } = require("../lib/prisma");
+      if (payload.role) {
+        if (payload.role === "VIEWER") {
+          return res.status(403).json({ error: "Forbidden: Viewer account is read-only and cannot modify data" });
+        }
+        return next();
+      }
+
+      // Fallback for legacy tokens without role in payload
       prisma.user.findUnique({
         where: { id: payload.userId },
         select: { role: true }
@@ -30,6 +38,7 @@ export const requireAuth = (req: any, res: any, next: any) => {
         if (user?.role === "VIEWER") {
           return res.status(403).json({ error: "Forbidden: Viewer account is read-only and cannot modify data" });
         }
+        req.user.role = user?.role;
         next();
       }).catch((err: any) => {
         logger.error({ err }, "Failed to verify VIEWER role write protection");
@@ -50,7 +59,13 @@ export const requireRole = (roles: string[]) => {
         return res.status(401).json({ error: "Unauthorized" });
       }
       
-      const { prisma } = await import("../lib/prisma");
+      if (req.user.role) {
+        if (!roles.includes(req.user.role)) {
+          return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
+        }
+        return next();
+      }
+
       const user = await prisma.user.findUnique({
         where: { id: req.user.userId },
         select: { role: true }
