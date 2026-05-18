@@ -57,10 +57,15 @@ export const getShiftSummary = async (req: Request, res: Response) => {
     // Compute all checklist items (merging actual responses and missed checks)
     const fullChecklist = checklistItemsList.map(item => {
       const response = checklistDetails.find(r => r.checklistItemId === item.id);
+      let status = (response as any)?.status || "PENDING";
+      if (response?.completed && status === "PENDING") {
+        status = "WORKING";
+      }
       return {
         id: item.id,
         checklistItem: { name: item.title, category: item.category },
         completed: response ? response.completed : false,
+        status,
         remarks: response ? response.remarks : "Not checked during this shift.",
         user: response ? response.user : { name: "System" },
         createdAt: response ? response.createdAt : today

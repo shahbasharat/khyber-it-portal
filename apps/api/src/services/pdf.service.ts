@@ -177,10 +177,18 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
         doc.fillColor("#333333").font("Helvetica").fontSize(8).text(res.checklistItem.title, 50, currentY + 4);
         doc.text(res.checklistItem.category.toUpperCase(), 280, currentY + 4);
         
-        if (res.completed) {
-          doc.fillColor("#2E7D32").font("Helvetica-Bold").text("COMPLETED", 480, currentY + 4);
+        let status = (res as any)?.status || "PENDING";
+        if (res.completed && status === "PENDING") {
+          status = "WORKING";
+        }
+        if (status === "WORKING") {
+          doc.fillColor("#2E7D32").font("Helvetica-Bold").text("WORKING", 480, currentY + 4);
+        } else if (status === "NOT_WORKING") {
+          doc.fillColor("#C62828").font("Helvetica-Bold").text("NOT WORKING", 480, currentY + 4);
+        } else if (status === "PARTIAL") {
+          doc.fillColor("#F57F17").font("Helvetica-Bold").text("PARTIAL", 480, currentY + 4);
         } else {
-          doc.fillColor("#C62828").font("Helvetica-Bold").text("INCOMPLETE", 480, currentY + 4);
+          doc.fillColor("#757575").font("Helvetica-Bold").text("PENDING", 480, currentY + 4);
         }
 
         currentY += 16;
