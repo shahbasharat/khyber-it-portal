@@ -345,10 +345,10 @@ export default function ChecklistPage() {
                               disabled={user?.role === "VIEWER" || toggling === item.id}
                               className={`w-full py-2 pl-3 pr-8 rounded-xl border text-xs font-bold appearance-none outline-none transition-all shadow-sm cursor-pointer ${getStatusColor(item.status)} ${user?.role === "VIEWER" ? "cursor-not-allowed opacity-80" : ""}`}
                             >
-                              <option value="PENDING" className="bg-white text-slate-600 font-bold">⚪ Pending</option>
-                              <option value="WORKING" className="bg-white text-emerald-700 font-bold">🟢 Working</option>
-                              <option value="PARTIAL" className="bg-white text-amber-700 font-bold">🟡 Partial / Flagged</option>
-                              <option value="NOT_WORKING" className="bg-white text-rose-700 font-bold">🔴 Not Working</option>
+                              <option value="PENDING" className="bg-white text-slate-600 font-bold">Pending</option>
+                              <option value="WORKING" className="bg-white text-emerald-700 font-bold">Working</option>
+                              <option value="PARTIAL" className="bg-white text-amber-700 font-bold">Partial / Flagged</option>
+                              <option value="NOT_WORKING" className="bg-white text-rose-700 font-bold">Not Working</option>
                             </select>
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                               {toggling === item.id ? (
@@ -399,10 +399,10 @@ export default function ChecklistPage() {
                           disabled={user?.role === "VIEWER" || toggling === item.id}
                           className={`w-full py-2.5 pl-3 pr-8 rounded-xl border text-xs font-bold appearance-none outline-none transition-all shadow-sm cursor-pointer ${getStatusColor(item.status)} ${user?.role === "VIEWER" ? "cursor-not-allowed opacity-80" : ""}`}
                         >
-                          <option value="PENDING" className="bg-white text-slate-600 font-bold">⚪ Pending</option>
-                          <option value="WORKING" className="bg-white text-emerald-700 font-bold">🟢 Working</option>
-                          <option value="PARTIAL" className="bg-white text-amber-700 font-bold">🟡 Partial / Flagged</option>
-                          <option value="NOT_WORKING" className="bg-white text-rose-700 font-bold">🔴 Not Working</option>
+                          <option value="PENDING" className="bg-white text-slate-600 font-bold">Pending</option>
+                          <option value="WORKING" className="bg-white text-emerald-700 font-bold">Working</option>
+                          <option value="PARTIAL" className="bg-white text-amber-700 font-bold">Partial / Flagged</option>
+                          <option value="NOT_WORKING" className="bg-white text-rose-700 font-bold">Not Working</option>
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                           {toggling === item.id ? (
