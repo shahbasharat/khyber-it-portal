@@ -15,6 +15,7 @@ export const getShiftSummary = async (req: Request, res: Response) => {
     const [
       totalIncidents,
       resolvedIncidents,
+      pendingIncidents,
       criticalAlerts,
       escalations,
       completedTasks,
@@ -22,12 +23,15 @@ export const getShiftSummary = async (req: Request, res: Response) => {
       lastReport,
       checklistDetails,
       issuesDetails,
-      checklistItemsList
+      checklistItemsList,
+      serverLogs,
+      wifiCodes
     ] = await Promise.all([
-      prisma.issue.count({ where: { createdAt: { gte: start, lte: end } } }),
+      prisma.issue.count({ where: { OR: [{ createdAt: { gte: start, lte: end } }, { status: { in: ["OPEN", "IN_PROGRESS", "ESCALATED"] } }] } }),
       prisma.issue.count({ where: { status: "RESOLVED", updatedAt: { gte: start, lte: end } } }),
-      prisma.issue.count({ where: { priority: "CRITICAL", createdAt: { gte: start, lte: end } } }),
-      prisma.issue.count({ where: { status: "ESCALATED", updatedAt: { gte: start, lte: end } } }),
+      prisma.issue.count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] } } }),
+      prisma.issue.count({ where: { priority: "CRITICAL", status: { in: ["OPEN", "IN_PROGRESS", "ESCALATED"] } } }),
+      prisma.issue.count({ where: { status: "ESCALATED" } }),
       prisma.checklistResponse.count({ where: { completed: true, createdAt: { gte: start, lte: end } } }),
       prisma.checklistItem.count(),
       prisma.report.findFirst({
@@ -39,7 +43,7 @@ export const getShiftSummary = async (req: Request, res: Response) => {
         include: { checklistItem: true, user: { select: { name: true } } }
       }),
       prisma.issue.findMany({
-        where: { createdAt: { gte: start, lte: end } },
+        where: { OR: [{ createdAt: { gte: start, lte: end } }, { status: { in: ["OPEN", "IN_PROGRESS", "ESCALATED"] } }] },
         include: {
           reporter: { select: { name: true } },
           assignee: { select: { name: true } },
@@ -51,7 +55,9 @@ export const getShiftSummary = async (req: Request, res: Response) => {
           escalation: true
         }
       }),
-      prisma.checklistItem.findMany()
+      prisma.checklistItem.findMany(),
+      prisma.serverRoomLog.findMany({ orderBy: { createdAt: "desc" }, take: 30 }),
+      prisma.guestWifiCode.findMany({ orderBy: { createdAt: "desc" }, take: 30 })
     ]);
 
     // Compute all checklist items (merging actual responses and missed checks)
@@ -87,7 +93,7 @@ export const getShiftSummary = async (req: Request, res: Response) => {
         id: lastReport?.id ?? null,
         totalIncidents,
         resolvedIncidents,
-        pendingIncidents: totalIncidents - resolvedIncidents,
+        pendingIncidents,
         criticalAlerts,
         escalations,
         checklistCompletion: `${completedTasks}/${totalTasks}`,
@@ -97,7 +103,9 @@ export const getShiftSummary = async (req: Request, res: Response) => {
         teamOnDuty
       },
       checklist: fullChecklist,
-      issues: issuesDetails
+      issues: issuesDetails,
+      serverLogs,
+      wifiCodes
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to generate shift summary" });

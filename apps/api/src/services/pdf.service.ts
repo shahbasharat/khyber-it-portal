@@ -55,15 +55,27 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       include: { checklistItem: true }
     });
 
-    // 3. Fetch all issues created on the day of this report
+    // 3. Fetch all issues created on the day of this report or currently outstanding
     const issues = await prisma.issue.findMany({
       where: {
-        createdAt: { gte: start, lte: end }
+        OR: [{ createdAt: { gte: start, lte: end } }, { status: { in: ["OPEN", "IN_PROGRESS", "ESCALATED"] } }]
       },
       include: {
         reporter: { select: { name: true } },
-        assignee: { select: { name: true } }
+        assignee: { select: { name: true } },
+        escalation: true
       }
+    });
+
+    // 3b. Fetch Server Room Logs and Wi-Fi Codes for the day
+    const serverLogs = await prisma.serverRoomLog.findMany({
+      where: { createdAt: { gte: start, lte: end } },
+      orderBy: { createdAt: "desc" }
+    });
+
+    const wifiCodes = await prisma.guestWifiCode.findMany({
+      where: { createdAt: { gte: start, lte: end } },
+      orderBy: { createdAt: "desc" }
     });
 
     // 4. Create PDF Document (A4 size, clean margins)
@@ -334,8 +346,103 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
         { width: 495, lineGap: 2 }
       );
 
+      // --- SECTION 6: SERVER ROOM LOGS ---
+      let sY = notesY + 90;
+      if (sY > 650) {
+        doc.addPage();
+        sY = 40;
+      }
+
+      doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("6. Server Room Entry/Exit Logs", 40, sY + 15);
+      
+      const sHeadY = sY + 33;
+      doc.rect(40, sHeadY, 515, 18).fill("#19433E");
+      doc.fillColor("#FDFBF7").fontSize(8).font("Helvetica-Bold");
+      doc.text("TIME", 50, sHeadY + 5);
+      doc.text("PERSON / ENGINEER", 130, sHeadY + 5);
+      doc.text("REASON / PURPOSE", 300, sHeadY + 5);
+
+      let sRowY = sHeadY + 18;
+      doc.fillColor("#333333").fontSize(8);
+
+      if (serverLogs.length === 0) {
+        doc.font("Helvetica-Oblique").text("No server room entries recorded during this shift.", 50, sRowY + 6);
+        sRowY += 18;
+      } else {
+        serverLogs.forEach((log, index) => {
+          if (sRowY > 730) {
+            doc.addPage();
+            doc.rect(40, 40, 515, 18).fill("#19433E");
+            doc.fillColor("#FDFBF7").fontSize(8).font("Helvetica-Bold");
+            doc.text("TIME", 50, 45);
+            doc.text("PERSON / ENGINEER", 130, 45);
+            doc.text("REASON / PURPOSE", 300, 45);
+            sRowY = 63;
+          }
+
+          if (index % 2 === 0) {
+            doc.rect(40, sRowY, 515, 20).fill("#FAF9F6");
+          }
+          
+          doc.fillColor("#333333").font("Helvetica-Bold").text(log.entryTime, 50, sRowY + 6);
+          doc.font("Helvetica").text(log.userName, 130, sRowY + 6, { width: 160, height: 10 });
+          doc.text(log.reason, 300, sRowY + 6, { width: 200, height: 10 });
+
+          sRowY += 20;
+        });
+      }
+
+      // --- SECTION 7: GUEST WI-FI VOUCHERS ---
+      let wY = sRowY + 20;
+      if (wY > 650) {
+        doc.addPage();
+        wY = 40;
+      }
+
+      doc.fillColor("#19433E").fontSize(12).font("Helvetica-Bold").text("7. Guest Wi-Fi Vouchers Issued", 40, wY + 15);
+      
+      const wHeadY = wY + 33;
+      doc.rect(40, wHeadY, 515, 18).fill("#19433E");
+      doc.fillColor("#FDFBF7").fontSize(8).font("Helvetica-Bold");
+      doc.text("ACCESS CODE", 50, wHeadY + 5);
+      doc.text("ISSUED TO", 150, wHeadY + 5);
+      doc.text("PLAN", 330, wHeadY + 5);
+      doc.text("DEVICES", 460, wHeadY + 5);
+
+      let wRowY = wHeadY + 18;
+      doc.fillColor("#333333").fontSize(8);
+
+      if (wifiCodes.length === 0) {
+        doc.font("Helvetica-Oblique").text("No guest Wi-Fi vouchers issued during this shift.", 50, wRowY + 6);
+        wRowY += 18;
+      } else {
+        wifiCodes.forEach((wifi, index) => {
+          if (wRowY > 730) {
+            doc.addPage();
+            doc.rect(40, 40, 515, 18).fill("#19433E");
+            doc.fillColor("#FDFBF7").fontSize(8).font("Helvetica-Bold");
+            doc.text("ACCESS CODE", 50, 45);
+            doc.text("ISSUED TO", 150, 45);
+            doc.text("PLAN", 330, 45);
+            doc.text("DEVICES", 460, 45);
+            wRowY = 63;
+          }
+
+          if (index % 2 === 0) {
+            doc.rect(40, wRowY, 515, 20).fill("#FAF9F6");
+          }
+          
+          doc.fillColor("#19433E").font("Helvetica-Bold").text(wifi.accessCode, 50, wRowY + 6);
+          doc.fillColor("#333333").font("Helvetica").text(wifi.issuedTo, 150, wRowY + 6, { width: 170, height: 10 });
+          doc.text(wifi.plan, 330, wRowY + 6, { width: 120, height: 10 });
+          doc.font("Helvetica-Bold").text(`${wifi.deviceLimit} Devices`, 460, wRowY + 6);
+
+          wRowY += 20;
+        });
+      }
+
       // --- FOOTER PANEL ---
-      let footerY = notesY + 115;
+      let footerY = wRowY + 30;
       if (footerY > 730) {
         doc.addPage();
         footerY = 60;

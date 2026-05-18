@@ -3,34 +3,52 @@ import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
 import nodemailer from "nodemailer";
 
-// Initialize standard Gmail SMTP transporter
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.SMTP_USER || "itkhyber@gmail.com",
-    pass: process.env.SMTP_PASS, // Google App Password
-  },
-});
-
-// Unified Email Sender Helper using Google Gmail SMTP
+// Unified Email Sender Helper with Dynamic SMTP & Smart Brevo/Gmail Detection
 export const sendEmail = async (options: { to: string[]; subject: string; html: string; attachments?: any[] }) => {
-  const senderEmail = process.env.SMTP_USER || "itkhyber@gmail.com";
+  const smtpUser = process.env.SMTP_USER || "itkhyber@gmail.com";
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = Number(process.env.SMTP_PORT || 587);
   const senderName = "Khyber IT Operations";
 
-  if (!process.env.SMTP_PASS) {
-    logger.warn("SMTP_PASS is not configured in .env. Email dispatch will log to console.");
-    logger.info({ to: options.to, subject: options.subject }, "EMAIL LOG (Gmail SMTP Not Configured)");
+  if (!smtpPass) {
+    logger.warn("SMTP_PASS is not configured in environment variables. Email dispatch will log to console.");
+    logger.info({ to: options.to, subject: options.subject }, "EMAIL LOG (SMTP Not Configured)");
     return { success: false, error: "SMTP_PASS not configured" };
   }
 
   try {
+    // Dynamically configure transporter based on Brevo vs Gmail credentials
+    let transporterOptions: any = {
+      host: smtpUser.includes("brevo.com") || smtpUser.includes("sendinblue.com") ? "smtp-relay.brevo.com" : smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    };
+
+    // If using Gmail credentials, use service helper
+    if ((smtpHost.includes("gmail.com") || smtpUser.includes("gmail.com")) && !smtpUser.includes("brevo.com")) {
+      transporterOptions = {
+        service: "gmail",
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      };
+    }
+
+    const transporter = nodemailer.createTransport(transporterOptions);
+
     const formattedAttachments = options.attachments?.map(att => ({
       filename: att.filename,
       content: att.content
     })) || [];
 
     const mailOptions = {
-      from: `"${senderName}" <${senderEmail}>`,
+      from: `"${senderName}" <${smtpUser}>`,
       to: options.to.join(", "),
       subject: options.subject,
       html: options.html,
@@ -38,10 +56,10 @@ export const sendEmail = async (options: { to: string[]; subject: string; html: 
     };
 
     const info = await transporter.sendMail(mailOptions);
-    logger.info({ messageId: info.messageId }, "Email dispatched successfully via Gmail SMTP");
+    logger.info({ messageId: info.messageId, host: transporterOptions.host || transporterOptions.service }, "Email dispatched successfully via SMTP");
     return { success: true };
   } catch (error) {
-    logger.error({ error }, "Gmail SMTP dispatch failed");
+    logger.error({ error, smtpUser }, "SMTP dispatch failed");
     return { success: false, error: (error as Error).message || error };
   }
 };

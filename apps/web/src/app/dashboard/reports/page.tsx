@@ -53,6 +53,26 @@ interface Issue {
   } | null;
 }
 
+interface ServerRoomLog {
+  id: string;
+  entryDate: string;
+  entryTime: string;
+  userName: string;
+  reason: string;
+  createdAt: string;
+}
+
+interface GuestWifiCode {
+  id: string;
+  fromDate: string;
+  toDate: string;
+  accessCode: string;
+  deviceLimit: number;
+  plan: string;
+  issuedTo: string;
+  createdAt: string;
+}
+
 interface ReportData {
   date: string;
   summary: {
@@ -70,6 +90,8 @@ interface ReportData {
   };
   checklist: ChecklistResponse[];
   issues: Issue[];
+  serverLogs: ServerRoomLog[];
+  wifiCodes: GuestWifiCode[];
 }
 
 export default function ReportsPage() {
@@ -208,6 +230,8 @@ export default function ReportsPage() {
           { id: "summary", label: "Shift Summary", count: null },
           { id: "checklist", label: "Daily Checklist", count: data.checklist.length },
           { id: "incidents", label: "Incidents Faced", count: data.issues.length },
+          { id: "serverLogs", label: "Server Logs", count: data.serverLogs.length },
+          { id: "wifiCodes", label: "Wi-Fi Vouchers", count: data.wifiCodes.length },
           { id: "notes", label: "Handover Notes", count: null }
         ].map(tab => (
           <button
@@ -497,6 +521,76 @@ export default function ReportsPage() {
                         <td className="p-4 text-slate-mid italic font-medium">
                           {issue.escalation?.remarks || "High priority incident."}
                         </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {(activeTab === "all" || activeTab === "serverLogs") && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-fir-green text-white text-sm font-extrabold uppercase py-2.5 px-4 rounded-xl tracking-wider shadow-sm flex items-center gap-2">
+              <Activity size={18} /> Server Room Entry/Exit Logs
+            </div>
+            <div className="overflow-x-auto border border-slate-border/60 rounded-2xl shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-dark font-bold border-b border-slate-border/60 uppercase tracking-wider">
+                    <th className="p-4 border-r border-slate-border/40 w-32">Time</th>
+                    <th className="p-4 border-r border-slate-border/40 w-1/4">Person / Engineer</th>
+                    <th className="p-4">Reason / Purpose</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-border/40">
+                  {data.serverLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="p-8 text-center text-slate-mid italic bg-cream/20">No server room entries recorded during this shift.</td>
+                    </tr>
+                  ) : (
+                    data.serverLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-cream/15 transition-colors">
+                        <td className="p-4 border-r border-slate-border/40 font-extrabold text-slate-dark font-mono text-sm">{log.entryTime}</td>
+                        <td className="p-4 border-r border-slate-border/40 font-bold text-slate-dark text-sm">{log.userName}</td>
+                        <td className="p-4 text-slate-dark leading-relaxed">{log.reason}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {(activeTab === "all" || activeTab === "wifiCodes") && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-fir-green text-white text-sm font-extrabold uppercase py-2.5 px-4 rounded-xl tracking-wider shadow-sm flex items-center gap-2">
+              <Users size={18} /> Guest Wi-Fi Vouchers Issued
+            </div>
+            <div className="overflow-x-auto border border-slate-border/60 rounded-2xl shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-dark font-bold border-b border-slate-border/60 uppercase tracking-wider">
+                    <th className="p-4 border-r border-slate-border/40 w-32">Access Code</th>
+                    <th className="p-4 border-r border-slate-border/40 w-1/4">Issued To</th>
+                    <th className="p-4 border-r border-slate-border/40 w-32">Plan</th>
+                    <th className="p-4 w-28 text-center">Devices</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-border/40">
+                  {data.wifiCodes.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="p-8 text-center text-slate-mid italic bg-cream/20">No guest Wi-Fi vouchers issued during this shift.</td>
+                    </tr>
+                  ) : (
+                    data.wifiCodes.map((wifi) => (
+                      <tr key={wifi.id} className="hover:bg-cream/15 transition-colors">
+                        <td className="p-4 border-r border-slate-border/40 font-extrabold text-fir-green font-mono text-sm">{wifi.accessCode}</td>
+                        <td className="p-4 border-r border-slate-border/40 font-bold text-slate-dark text-sm">{wifi.issuedTo}</td>
+                        <td className="p-4 border-r border-slate-border/40 text-slate-dark font-medium">{wifi.plan}</td>
+                        <td className="p-4 text-center font-bold text-slate-dark">{wifi.deviceLimit} Devices</td>
                       </tr>
                     ))
                   )}
