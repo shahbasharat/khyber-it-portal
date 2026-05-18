@@ -18,23 +18,30 @@ export const sendEmail = async (options: { to: string[]; subject: string; html: 
   }
 
   try {
-    // Dynamically configure transporter using explicit STARTTLS settings for maximum cloud compatibility
-    const isBrevo = smtpUser.includes("brevo.com") || smtpUser.includes("sendinblue.com");
-    const host = isBrevo ? "smtp-relay.brevo.com" : smtpHost;
-    
-    const transporterOptions: any = {
-      host,
+    // Dynamically configure transporter based on Brevo vs Gmail credentials
+    let transporterOptions: any = {
+      host: smtpUser.includes("brevo.com") || smtpUser.includes("sendinblue.com") ? "smtp-relay.brevo.com" : smtpHost,
       port: smtpPort,
-      secure: smtpPort === 465, // false for 587
-      requireTLS: smtpPort === 587, // force STARTTLS
+      secure: smtpPort === 465,
       auth: {
-        user: smtpUser,
-        pass: smtpPass,
+        user: smtpUser.trim(),
+        pass: smtpPass.trim().replace(/['"]/g, ""),
       },
-      tls: {
-        rejectUnauthorized: false // Allow cloud proxies like Railway
-      }
     };
+
+    // If using Gmail credentials, use explicit secure host config to prevent cloud IP blocking
+    if ((smtpHost.includes("gmail.com") || smtpUser.includes("gmail.com")) && !smtpUser.includes("brevo.com")) {
+      transporterOptions = {
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        requireTLS: true,
+        auth: {
+          user: smtpUser.trim(),
+          pass: smtpPass.trim().replace(/['"]/g, ""), // Strip accidental quotes or spaces from Railway dashboard variables
+        },
+      };
+    }
 
     const transporter = nodemailer.createTransport(transporterOptions);
 
@@ -52,11 +59,11 @@ export const sendEmail = async (options: { to: string[]; subject: string; html: 
     };
 
     const info = await transporter.sendMail(mailOptions);
-    logger.info({ messageId: info.messageId, host }, "Email dispatched successfully via SMTP");
+    logger.info({ messageId: info.messageId, host: transporterOptions.host || transporterOptions.service }, "Email dispatched successfully via SMTP");
     return { success: true };
-  } catch (error: any) {
-    logger.error({ errMessage: error.message, errCode: error.code, smtpUser }, "SMTP dispatch failed");
-    return { success: false, error: error.message || error };
+  } catch (error) {
+    logger.error({ error, smtpUser }, "SMTP dispatch failed");
+    return { success: false, error: (error as Error).message || error };
   }
 };
 

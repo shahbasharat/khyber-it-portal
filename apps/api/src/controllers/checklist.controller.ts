@@ -26,7 +26,7 @@ export const getDailyChecklist = async (req: any, res: Response) => {
       },
     });
 
-    const formattedItems = items.map((item) => {
+    const formattedItems = items.map((item: any) => {
       const response = item.responses[0];
       let status = response?.status || "PENDING";
       if (response?.completed && status === "PENDING") {
@@ -132,22 +132,22 @@ export const bulkUpdateChecklistItems = async (req: any, res: Response) => {
 
     const existingResponses = await prisma.checklistResponse.findMany({
       where: {
-        checklistItemId: { in: items.map(i => i.id) },
+        checklistItemId: { in: items.map((i: any) => i.id) },
         createdAt: { gte: start, lte: end }
       }
     });
 
-    const existingItemIds = new Set(existingResponses.map(r => r.checklistItemId));
-    const missingItems = items.filter(i => !existingItemIds.has(i.id));
+    const existingItemIds = new Set(existingResponses.map((r: any) => r.checklistItemId));
+    const missingItems = items.filter((i: any) => !existingItemIds.has(i.id));
 
     const transactions = [
-      ...existingResponses.map(r => 
+      ...existingResponses.map((r: any) => 
         prisma.checklistResponse.update({
           where: { id: r.id },
           data: { status, completed, userId }
         })
       ),
-      ...missingItems.map(i => 
+      ...missingItems.map((i: any) => 
         prisma.checklistResponse.create({
           data: {
             checklistItemId: i.id,
