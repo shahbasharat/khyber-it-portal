@@ -21,6 +21,7 @@ import escalationRoutes from "./routes/escalation.routes";
 import { initCronJobs } from "./jobs/cron";
 
 const app = express();
+app.set("trust proxy", 1); // Trust first proxy (Railway/Vercel)
 const PORT = process.env.PORT || 3001;
 
 // Middleware
