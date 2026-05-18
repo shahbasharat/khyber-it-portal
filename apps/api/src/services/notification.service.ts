@@ -1,53 +1,56 @@
 import { prisma } from "../lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
-import nodemailer from "nodemailer";
 
-// SMTP Transporter Builder
-const getTransporter = () => {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) {
-    logger.warn("SMTP credentials are not fully configured in .env. Email dispatch will log to console.");
-    return null;
-  }
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465, // SSL for 465, TLS/STARTTLS for others
-    auth: { user, pass },
-    tls: {
-      rejectUnauthorized: false // Avoid self-signed/domain trust issues in secure resort internal intranets
-    }
-  });
-};
-
-// Unified Email Sender Helper
+// Unified Email Sender Helper using Brevo's HTTPS REST API (Port 443 - 100% firewall unblocked!)
 export const sendEmail = async (options: { to: string[]; subject: string; html: string; attachments?: any[] }) => {
-  const transporter = getTransporter();
-  const fromHeader = process.env.SMTP_FROM || `"Khyber IT Portal" <${process.env.SMTP_USER || "noreply@khyberhotels.com"}>`;
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.SMTP_USER || "itkhyber@gmail.com";
+  const senderName = "Khyber IT Operations";
 
-  if (!transporter) {
-    logger.warn({ to: options.to, subject: options.subject }, "EMAIL LOG (SMTP Not Configured)");
-    return { success: false, error: "SMTP not configured" };
+  if (!brevoApiKey) {
+    logger.warn("BREVO_API_KEY is not configured in .env. Email dispatch will log to console.");
+    logger.info({ to: options.to, subject: options.subject }, "EMAIL LOG (SMTP Not Configured)");
+    return { success: false, error: "Brevo API Key not configured" };
   }
 
   try {
-    const info = await transporter.sendMail({
-      from: fromHeader,
-      to: options.to.join(", "),
+    const formattedAttachments = options.attachments?.map(att => ({
+      name: att.filename,
+      content: att.content.toString("base64")
+    })) || [];
+
+    const emailPayload: any = {
+      sender: { name: senderName, email: senderEmail },
+      to: options.to.map(email => ({ email })),
       subject: options.subject,
-      html: options.html,
-      attachments: options.attachments,
+      htmlContent: options.html
+    };
+
+    if (formattedAttachments.length > 0) {
+      emailPayload.attachment = formattedAttachments;
+    }
+
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "api-key": brevoApiKey as string,
+        "content-type": "application/json"
+      } as Record<string, string>,
+      body: JSON.stringify(emailPayload)
     });
-    logger.info({ messageId: info.messageId }, "Email dispatched successfully via Nodemailer SMTP");
+
+    if (!response.ok) {
+      const errText = await response.text();
+      logger.error({ errText, status: response.status }, "Brevo dispatch failed");
+      return { success: false, error: errText };
+    }
+
+    logger.info("Email dispatched successfully via Brevo HTTPS REST API");
     return { success: true };
   } catch (error) {
-    logger.error({ error, to: options.to }, "Nodemailer SMTP dispatch failed");
+    logger.error({ error }, "Brevo dispatch network error");
     return { success: false, error };
   }
 };
