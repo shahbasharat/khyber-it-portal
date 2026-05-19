@@ -11,10 +11,20 @@ const CreateServerRoomLogSchema = z.object({
 
 export const getServerRoomLogs = async (req: Request, res: Response) => {
   try {
-    const logs = await (prisma as any).serverRoomLog.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    res.json(logs);
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit as string) || 50);
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      prisma.serverRoomLog.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.serverRoomLog.count(),
+    ]);
+
+    res.json({ data: logs, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     logger.error(error, "Failed to fetch server room logs");
     res.status(500).json({ error: "Failed to fetch server room logs" });
@@ -24,14 +34,14 @@ export const getServerRoomLogs = async (req: Request, res: Response) => {
 export const createServerRoomLog = async (req: Request, res: Response) => {
   try {
     const validatedData = CreateServerRoomLogSchema.parse(req.body);
-    
-    const log = await (prisma as any).serverRoomLog.create({
+
+    const log = await prisma.serverRoomLog.create({
       data: {
         ...validatedData,
         entryDate: new Date(),
       },
     });
-    
+
     res.status(201).json(log);
   } catch (error: any) {
     if (error.name === "ZodError") return res.status(400).json({ error: error.errors });
@@ -42,12 +52,13 @@ export const createServerRoomLog = async (req: Request, res: Response) => {
 
 export const getServerHeartbeats = async (req: Request, res: Response) => {
   try {
-    const devices = await (prisma as any).networkDevice.findMany({
+    const devices = await prisma.networkDevice.findMany({
       orderBy: { createdAt: "asc" }
     });
 
-    // Run dynamic simulated latency on all registered devices in the database!
-    const heartbeats = devices.map((device: any) => {
+    // NOTE: Latency values are simulated — no real ICMP/HTTP ping is performed.
+    // Status is always reported as ONLINE. This is a display-only feature.
+    const heartbeats = devices.map((device) => {
       let latencyBase = 3;
       if (device.category === "INTERNET") latencyBase = 18;
       else if (device.category === "DATABASE") latencyBase = 4;
@@ -58,7 +69,7 @@ export const getServerHeartbeats = async (req: Request, res: Response) => {
         name: device.name,
         ip: device.ip,
         latency,
-        status: "ONLINE",
+        status: "SIMULATED",
         uptime: device.uptime,
         category: device.category
       };
@@ -79,13 +90,12 @@ const CreateNetworkDeviceSchema = z.object({
 
 export const createNetworkDevice = async (req: Request, res: Response) => {
   try {
-    // Strict Role authorization check
     if ((req as any).user?.role !== "MANAGER") {
       return res.status(403).json({ error: "Access Denied: Only IT Managers can register network devices." });
     }
 
     const validatedData = CreateNetworkDeviceSchema.parse(req.body);
-    const device = await (prisma as any).networkDevice.create({
+    const device = await prisma.networkDevice.create({
       data: validatedData
     });
     res.status(201).json(device);
@@ -99,13 +109,12 @@ export const createNetworkDevice = async (req: Request, res: Response) => {
 export const deleteNetworkDevice = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    // Strict Role authorization check
     if ((req as any).user?.role !== "MANAGER") {
       return res.status(403).json({ error: "Access Denied: Only IT Managers can remove network devices." });
     }
 
-    await (prisma as any).networkDevice.delete({
-      where: { id }
+    await prisma.networkDevice.delete({
+      where: { id: id as string }
     });
     res.json({ success: true, message: "Network device removed successfully." });
   } catch (error) {

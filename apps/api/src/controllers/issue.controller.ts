@@ -18,10 +18,23 @@ export const EscalateIssueSchema = z.object({
 
 export const getIssues = async (req: Request, res: Response) => {
   const { status, priority, department, assigneeId } = req.query;
-  
+
+  const VALID_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED", "ESCALATED"];
+  const VALID_PRIORITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
+
   const where: any = {};
-  if (status) where.status = status;
-  if (priority) where.priority = priority;
+  if (status) {
+    if (!VALID_STATUSES.includes(status as string)) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` });
+    }
+    where.status = status;
+  }
+  if (priority) {
+    if (!VALID_PRIORITIES.includes(priority as string)) {
+      return res.status(400).json({ error: `Invalid priority. Must be one of: ${VALID_PRIORITIES.join(", ")}` });
+    }
+    where.priority = priority;
+  }
   if (department) where.department = department;
   if (assigneeId) where.assigneeId = assigneeId;
 
@@ -127,7 +140,7 @@ export const updateIssue = async (req: Request, res: Response) => {
     });
 
     if (updateData.status === "RESOLVED") {
-      // Automatically resolve associated pending escalations
+      // Automatically resolve associated active escalations
       await prisma.escalation.updateMany({
         where: { issueId: id as string, status: "ACTIVE" },
         data: { status: "RESOLVED" }
@@ -142,13 +155,9 @@ export const updateIssue = async (req: Request, res: Response) => {
           }
         });
       }
-    } else if (updateData.status === "IN_PROGRESS" || updateData.status === "OPEN") {
-      // Downgrade associated pending escalations
-      await prisma.escalation.updateMany({
-        where: { issueId: id as string, status: "ACTIVE" },
-        data: { status: "RESOLVED" }
-      });
     }
+    // Note: re-opening an issue (IN_PROGRESS / OPEN) does NOT auto-resolve escalations —
+    // the escalation should remain active until explicitly resolved.
 
     res.json(issue);
   } catch (error: any) {
@@ -191,7 +200,14 @@ export const escalateIssue = async (req: Request, res: Response) => {
     const validatedData = EscalateIssueSchema.parse(req.body);
     const userId = (req as any).user.userId;
 
-    const [escalation, issue] = await prisma.$transaction([
+    // Check for existing escalation and return 409 instead of letting the DB throw
+    const existing = await prisma.escalation.findUnique({ where: { issueId: id as string } });
+    if (existing) {
+      return res.status(409).json({ error: "This issue has already been escalated" });
+    }
+
+    // Run all three writes atomically
+    const [escalation, updatedIssue] = await prisma.$transaction([
       prisma.escalation.create({
         data: {
           issueId: id as string,
@@ -216,7 +232,7 @@ export const escalateIssue = async (req: Request, res: Response) => {
     // Trigger immediate email notification to manager for Escalations
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (user) {
-      notificationService.sendEscalationEmail(issue.title, escalation, user.name).catch(console.error);
+      notificationService.sendEscalationEmail(updatedIssue.title, escalation, user.name).catch(console.error);
     }
 
     res.status(201).json(escalation);

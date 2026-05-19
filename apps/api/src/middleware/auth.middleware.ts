@@ -3,7 +3,12 @@ import jwt from "jsonwebtoken";
 import logger from "../lib/logger";
 import { prisma } from "../lib/prisma";
 
-export const requireAuth = (req: any, res: any, next: any) => {
+// Typed request interface so we don't scatter `any` casts everywhere
+export interface AuthRequest extends Request {
+  user: { userId: string; role: string };
+}
+
+export const requireAuth = async (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -17,39 +22,37 @@ export const requireAuth = (req: any, res: any, next: any) => {
     return res.status(500).json({ error: "Internal Server Error: Security configuration missing" });
   }
 
+  let payload: { userId: string; role?: string };
   try {
-    const payload = jwt.verify(token, secret) as { userId: string; role?: string };
-    req.user = payload;
-
-    // Strict write-prevention block for VIEWER (read-only) accounts
-    if (["POST", "PUT", "DELETE", "PATCH"].includes(req.method)) {
-      if (payload.role) {
-        if (payload.role === "VIEWER") {
-          return res.status(403).json({ error: "Forbidden: Viewer account is read-only and cannot modify data" });
-        }
-        return next();
-      }
-
-      // Fallback for legacy tokens without role in payload
-      prisma.user.findUnique({
-        where: { id: payload.userId },
-        select: { role: true }
-      }).then((user: any) => {
-        if (user?.role === "VIEWER") {
-          return res.status(403).json({ error: "Forbidden: Viewer account is read-only and cannot modify data" });
-        }
-        req.user.role = user?.role;
-        next();
-      }).catch((err: any) => {
-        logger.error(err, "Failed to verify VIEWER role write protection");
-        res.status(500).json({ error: "Internal Server Error" });
-      });
-    } else {
-      next();
-    }
-  } catch (error) {
+    payload = jwt.verify(token, secret) as { userId: string; role?: string };
+  } catch {
     return res.status(401).json({ error: "Token invalid or expired" });
   }
+
+  // If the token already carries the role (all tokens issued after the role was added to the payload)
+  // use it directly. Otherwise fall back to a DB lookup for legacy tokens.
+  if (payload.role) {
+    req.user = { userId: payload.userId, role: payload.role };
+  } else {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { role: true },
+      });
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      req.user = { userId: payload.userId, role: user.role };
+    } catch (err) {
+      logger.error(err, "Failed to look up user role in requireAuth");
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
+  // Strict write-prevention for VIEWER (read-only) accounts
+  if (["POST", "PUT", "DELETE", "PATCH"].includes(req.method) && req.user.role === "VIEWER") {
+    return res.status(403).json({ error: "Forbidden: Viewer account is read-only and cannot modify data" });
+  }
+
+  return next();
 };
 
 export const requireRole = (roles: string[]) => {

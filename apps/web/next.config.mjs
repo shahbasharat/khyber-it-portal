@@ -1,12 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api$/, "") || "http://localhost:3001";
     return [
       {
         source: '/api/:path*',
-        destination: 'https://api-production-7927.up.railway.app/api/:path*' // Proxy to Railway Backend
+        destination: `${apiUrl}/api/:path*` // Proxy to backend — set NEXT_PUBLIC_API_URL in .env.local
       }
-    ]
+    ];
   }
 };
 

@@ -47,6 +47,15 @@ export const NotificationBell = () => {
     } catch (e) {}
   };
 
+  const clearAll = async () => {
+    try {
+      // Mark all unread notifications as read one by one
+      const unread = notifications.filter(n => !n.isRead);
+      await Promise.all(unread.map(n => api.patch(`/notifications/${n.id}/read`)));
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    } catch (e) {}
+  };
+
   return (
     <div className="relative">
       <button 
@@ -91,7 +100,13 @@ export const NotificationBell = () => {
               )}
             </div>
             <div className="p-3 text-center border-t border-slate-border/50 bg-cream/30">
-              <button className="text-xs font-bold text-fir-green hover:text-fir-green-dark">Clear All</button>
+              <button
+                onClick={clearAll}
+                disabled={unreadCount === 0}
+                className="text-xs font-bold text-fir-green hover:text-fir-green-dark disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Mark All as Read
+              </button>
             </div>
           </div>
         </>

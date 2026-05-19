@@ -48,8 +48,9 @@ app.use(
         "http://localhost:3000",
         "http://127.0.0.1:3000"
       ].filter(Boolean) as string[];
-      
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+
+      // No origin = same-origin request (e.g. health checks, server-to-server)
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));

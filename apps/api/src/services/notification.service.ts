@@ -9,6 +9,15 @@ const cleanEnvVar = (val: string | undefined, defaultVal: string = ""): string =
   return val.trim().replace(/^['"]|['"]$/g, ""); // strip leading/trailing single or double quotes and trim whitespace
 };
 
+/** Escape user-supplied strings before embedding them in HTML email bodies */
+const escapeHtml = (str: string): string =>
+  String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 // Unified Email Sender Helper with Dynamic SMTP & Smart Brevo/Gmail Detection
 export const sendEmail = async (options: { to: string[]; subject: string; html: string; attachments?: any[] }) => {
   const resendApiKey = cleanEnvVar(process.env.RESEND_API_KEY);
@@ -152,8 +161,8 @@ export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #d97706;">Shift Handover Reminder</h2>
-          <p>Hello ${activeShift.user.name.split(" ")[0]},</p>
-          <p>Your <strong>${shiftType}</strong> shift is ending soon. Please remember to submit your end-of-shift report before you leave.</p>
+          <p>Hello ${escapeHtml(activeShift.user.name.split(" ")[0])},</p>
+          <p>Your <strong>${escapeHtml(shiftType)}</strong> shift is ending soon. Please remember to submit your end-of-shift report before you leave.</p>
           <p>Submitting your report ensures a smooth handover for the next shift.</p>
           <a href="${process.env.FRONTEND_URL || "https://khyber-it-portal-web.vercel.app"}/dashboard/reports" 
              style="display: inline-block; padding: 10px 20px; background-color: #004d40; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 10px;">
@@ -194,13 +203,13 @@ export const sendHandoverNotification = async (engineerName: string, content: st
 
     await sendEmail({
       to: recipients,
-      subject: `Khyber's Daily IT Flash - ${engineerName}`,
+      subject: `Khyber's Daily IT Flash - ${escapeHtml(engineerName)}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #004d40;">Khyber's Daily IT Flash</h2>
-          <p><strong>Submitted by:</strong> ${engineerName}</p>
+          <p><strong>Submitted by:</strong> ${escapeHtml(engineerName)}</p>
           <div style="margin-top: 20px; padding: 15px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; white-space: pre-wrap;">
-            ${content}
+            ${escapeHtml(content)}
           </div>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
           <p style="font-size: 12px; color: #666;">A copy of the compiled PDF report is attached to this email. You can also view it on the <a href="${process.env.FRONTEND_URL || "https://khyber-it-portal-web.vercel.app"}/dashboard/reports">Khyber IT Portal</a>.</p>
@@ -221,16 +230,16 @@ export const sendCriticalIssueEmail = async (issue: any) => {
     const recipients = managerEmail.split(",").map(e => e.trim());
     await sendEmail({
       to: recipients,
-      subject: `🚨 CRITICAL Incident Reported: ${issue.title}`,
+      subject: `🚨 CRITICAL Incident Reported: ${escapeHtml(issue.title)}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #fee2e2; border-radius: 10px;">
           <h2 style="color: #dc2626; margin-top: 0;">🚨 CRITICAL Alert</h2>
           <p>A new critical IT issue has been reported at the resort.</p>
           <div style="margin: 20px 0; padding: 15px; background-color: #fef2f2; border-radius: 8px; border: 1px solid #fee2e2;">
-            <p style="margin: 0 0 10px 0;"><strong>Incident:</strong> ${issue.title}</p>
-            <p style="margin: 0 0 10px 0;"><strong>Department/Location:</strong> ${issue.department}</p>
-            <p style="margin: 0 0 10px 0;"><strong>Reporter:</strong> ${issue.reporter?.name || "IT Engineer"}</p>
-            <p style="margin: 10px 0 0 0; padding-top: 10px; border-top: 1px dashed #fee2e2; white-space: pre-wrap;"><strong>Description:</strong> ${issue.description}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Incident:</strong> ${escapeHtml(issue.title)}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Department/Location:</strong> ${escapeHtml(issue.department)}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Reporter:</strong> ${escapeHtml(issue.reporter?.name || "IT Engineer")}</p>
+            <p style="margin: 10px 0 0 0; padding-top: 10px; border-top: 1px dashed #fee2e2; white-space: pre-wrap;"><strong>Description:</strong> ${escapeHtml(issue.description)}</p>
           </div>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
           <p style="font-size: 12px; color: #666;">View full details on the <a href="${process.env.FRONTEND_URL || "https://khyber-it-portal-web.vercel.app"}/dashboard/issues">Khyber IT Portal</a>.</p>
@@ -250,17 +259,17 @@ export const sendEscalationEmail = async (issueTitle: string, escalation: any, e
     const recipients = managerEmail.split(",").map(e => e.trim());
     await sendEmail({
       to: recipients,
-      subject: `⚠️ ESCALATION LOGGED: ${issueTitle}`,
+      subject: `⚠️ ESCALATION LOGGED: ${escapeHtml(issueTitle)}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #fed7aa; border-radius: 10px;">
           <h2 style="color: #ea580c; margin-top: 0;">⚠️ Escalation Logged</h2>
           <p>An IT incident has been formally escalated to a third-party vendor.</p>
           <div style="margin: 20px 0; padding: 15px; background-color: #fff7ed; border-radius: 8px; border: 1px solid #fed7aa;">
-            <p style="margin: 0 0 10px 0;"><strong>Incident:</strong> ${issueTitle}</p>
-            <p style="margin: 0 0 10px 0;"><strong>Escalated To:</strong> ${escalation.escalatedTo}</p>
-            <p style="margin: 0 0 10px 0;"><strong>Contact Details/ETA:</strong> ${escalation.contactDetails || "None"}</p>
-            <p style="margin: 0 0 10px 0;"><strong>Escalated By:</strong> ${engineerName}</p>
-            <p style="margin: 10px 0 0 0; padding-top: 10px; border-top: 1px dashed #fed7aa; white-space: pre-wrap;"><strong>Remarks:</strong> ${escalation.remarks || "None"}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Incident:</strong> ${escapeHtml(issueTitle)}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Escalated To:</strong> ${escapeHtml(escalation.escalatedTo)}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Contact Details/ETA:</strong> ${escapeHtml(escalation.contactDetails || "None")}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Escalated By:</strong> ${escapeHtml(engineerName)}</p>
+            <p style="margin: 10px 0 0 0; padding-top: 10px; border-top: 1px dashed #fed7aa; white-space: pre-wrap;"><strong>Remarks:</strong> ${escapeHtml(escalation.remarks || "None")}</p>
           </div>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
           <p style="font-size: 12px; color: #666;">View full details on the <a href="${process.env.FRONTEND_URL || "https://khyber-it-portal-web.vercel.app"}/dashboard/issues">Khyber IT Portal</a>.</p>

@@ -20,13 +20,28 @@ export const getNotifications = async (req: any, res: Response) => {
 
 export const markAsRead = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const userId = (req as any).user.userId;
 
   try {
-    const notification = await prisma.notification.update({
+    // Ownership check: only the notification's owner can mark it read
+    const notification = await prisma.notification.findUnique({
+      where: { id: id as string },
+      select: { userId: true },
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    if (notification.userId !== userId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const updated = await prisma.notification.update({
       where: { id: id as string },
       data: { isRead: true },
     });
-    res.json(notification);
+    res.json(updated);
   } catch (error) {
     logger.error(error, `Failed to update notification ${id} as read`);
     res.status(500).json({ error: "Failed to update notification" });

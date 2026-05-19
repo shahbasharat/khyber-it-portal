@@ -1,9 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { LoginSchema } from "@khyber/schemas";
 import { prisma } from "../lib/prisma";
 import logger from "../lib/logger";
+
+/** Hash a refresh token value before storing/looking it up in the DB */
+const hashToken = (token: string): string =>
+  crypto.createHash("sha256").update(token).digest("hex");
 
 const getAccessSecret = () => {
   const secret = process.env.JWT_ACCESS_SECRET;
@@ -62,10 +67,10 @@ export const login = async (req: any, res: any, next: any) => {
 
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.role);
 
-    // Save refresh token in DB
+    // Save hashed refresh token in DB (never store raw JWT)
     await prisma.refreshToken.create({
       data: {
-        tokenId: refreshTokenValue,
+        tokenId: hashToken(refreshTokenValue),
         userId: user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
@@ -97,14 +102,14 @@ export const login = async (req: any, res: any, next: any) => {
 export const refresh = async (req: any, res: any, next: any) => {
   try {
     const refreshTokenValue = req.cookies?.refreshToken;
-    console.log("Debug: Received Cookies:", req.cookies); // This will show in Railway logs
-    
+
     if (!refreshTokenValue) {
       return res.status(401).json({ error: "No refresh token provided" });
     }
 
+    // Look up by hashed token
     const tokenRecord = await prisma.refreshToken.findUnique({
-      where: { tokenId: refreshTokenValue },
+      where: { tokenId: hashToken(refreshTokenValue) },
       include: { user: true },
     });
 
@@ -118,12 +123,31 @@ export const refresh = async (req: any, res: any, next: any) => {
       return res.status(401).json({ error: "Invalid refresh token signature" });
     }
 
-    // Generate new access token
-    const accessToken = jwt.sign(
-      { userId: tokenRecord.userId, role: tokenRecord.user.role },
-      getAccessSecret(),
-      { expiresIn: "15m" } as jwt.SignOptions
+    // --- Refresh token rotation ---
+    // Delete the old token and issue a brand-new one so a stolen token can only be used once
+    await prisma.refreshToken.delete({ where: { id: tokenRecord.id } });
+
+    const { accessToken, refreshTokenValue: newRefreshTokenValue } = generateTokens(
+      tokenRecord.userId,
+      tokenRecord.user.role
     );
+
+    await prisma.refreshToken.create({
+      data: {
+        tokenId: hashToken(newRefreshTokenValue),
+        userId: tokenRecord.userId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    // Re-set the cookie with the new refresh token
+    res.cookie("refreshToken", newRefreshTokenValue, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.json({ accessToken });
   } catch (error) {
@@ -136,11 +160,16 @@ export const logout = async (req: any, res: any, next: any) => {
     const refreshTokenValue = req.cookies?.refreshToken;
     if (refreshTokenValue) {
       await prisma.refreshToken.deleteMany({
-        where: { tokenId: refreshTokenValue },
+        where: { tokenId: hashToken(refreshTokenValue) },
       });
     }
 
-    res.clearCookie("refreshToken");
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+    });
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -165,6 +194,10 @@ export const changePassword = async (req: any, res: Response) => {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: "Current password and new password are required" });
+    }
+
+    if (typeof newPassword !== "string" || newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters long" });
     }
 
     const user = await prisma.user.findUnique({

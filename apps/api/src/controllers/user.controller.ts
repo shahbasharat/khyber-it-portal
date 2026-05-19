@@ -1,7 +1,23 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import logger from "../lib/logger";
+
+const VALID_ROLES = ["MANAGER", "ENGINEER", "SENIOR_ASSOCIATE", "ASSOCIATE", "VIEWER"] as const;
+
+const CreateUserSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().min(1, "Name is required").max(100),
+  role: z.enum(VALID_ROLES).default("ASSOCIATE"),
+});
+
+const UpdateUserSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100).optional(),
+  role: z.enum(VALID_ROLES).optional(),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+});
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -17,8 +33,12 @@ export const getUsers = async (req: Request, res: Response) => {
 
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { email, password, name, role } = req.body;
-    
+    const parseResult = CreateUserSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ error: parseResult.error.issues });
+    }
+    const { email, password, name, role } = parseResult.data;
+
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: "User with this email already exists" });
@@ -42,9 +62,16 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    const { name, role, password } = req.body;
 
-    const data: any = { name, role };
+    const parseResult = UpdateUserSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ error: parseResult.error.issues });
+    }
+    const { name, role, password } = parseResult.data;
+
+    const data: any = {};
+    if (name !== undefined) data.name = name;
+    if (role !== undefined) data.role = role;
     if (password) {
       const salt = await bcrypt.genSalt(10);
       data.passwordHash = await bcrypt.hash(password, salt);
@@ -66,13 +93,19 @@ export const updateUser = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    
-    // Prevent deleting the last manager or oneself
-    const userRole = (req as any).user.role;
     const userId = (req as any).user.userId;
 
     if (id === userId) {
-        return res.status(400).json({ error: "Cannot delete yourself" });
+      return res.status(400).json({ error: "Cannot delete yourself" });
+    }
+
+    // Prevent deleting the last manager
+    const targetUser = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+    if (targetUser?.role === "MANAGER") {
+      const managerCount = await prisma.user.count({ where: { role: "MANAGER" } });
+      if (managerCount <= 1) {
+        return res.status(400).json({ error: "Cannot delete the last manager account" });
+      }
     }
 
     await prisma.user.delete({ where: { id } });

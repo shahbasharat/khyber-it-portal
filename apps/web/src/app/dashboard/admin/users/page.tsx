@@ -211,6 +211,7 @@ export default function AdminUsersPage() {
               className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
             >
               <option value="ASSOCIATE">Associate</option>
+              <option value="ENGINEER">Engineer</option>
               <option value="SENIOR_ASSOCIATE">Senior Associate</option>
               <option value="MANAGER">Manager</option>
               <option value="VIEWER">Viewer (Read-Only)</option>
@@ -265,6 +266,7 @@ export default function AdminUsersPage() {
               className="w-full px-3 py-2 rounded-lg border border-slate-border focus:ring-2 focus:ring-fir-green outline-none"
             >
               <option value="ASSOCIATE">Associate</option>
+              <option value="ENGINEER">Engineer</option>
               <option value="SENIOR_ASSOCIATE">Senior Associate</option>
               <option value="MANAGER">Manager</option>
               <option value="VIEWER">Viewer (Read-Only)</option>

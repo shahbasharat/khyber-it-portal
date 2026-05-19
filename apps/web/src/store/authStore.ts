@@ -24,13 +24,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAuth: (user, accessToken) => set({ user, accessToken, isInitialized: true }),
   logout: () => {
     set({ user: null, accessToken: null, isInitialized: true });
-    // Cleanup local storage if any
   },
   initAuth: async () => {
     try {
-      const response = await api.get("/auth/me");
-      set({ user: response.data, isInitialized: true });
-    } catch (error) {
+      // First refresh to get a valid access token (handles page reloads)
+      const refreshRes = await api.post("/auth/refresh");
+      const { accessToken } = refreshRes.data;
+
+      // Then fetch the current user profile
+      const meRes = await api.get("/auth/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      set({ user: meRes.data, accessToken, isInitialized: true });
+    } catch {
+      // No valid session — mark as initialized so the app can redirect to login
       set({ isInitialized: true });
     }
   },

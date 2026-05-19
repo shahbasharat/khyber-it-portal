@@ -4,7 +4,7 @@ import logger from "../lib/logger";
 
 export const getEscalations = async (req: Request, res: Response) => {
   try {
-    const escalations = await (prisma as any).escalation.findMany({
+    const escalations = await prisma.escalation.findMany({
       include: {
         issue: {
           include: {
@@ -14,7 +14,7 @@ export const getEscalations = async (req: Request, res: Response) => {
       },
       orderBy: { createdAt: "desc" }
     });
-    
+
     res.json(escalations);
   } catch (error) {
     logger.error(error, "Failed to fetch escalations");
@@ -28,10 +28,15 @@ export const updateEscalationStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const userId = (req as any).user.userId;
 
-    const currentEscalation = await (prisma as any).escalation.findUnique({
-      where: { id }
+    const VALID_STATUSES = ["ACTIVE", "RESOLVED"];
+    if (!VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` });
+    }
+
+    const currentEscalation = await prisma.escalation.findUnique({
+      where: { id: id as string }
     });
-    
+
     if (!currentEscalation) {
       return res.status(404).json({ error: "Escalation not found" });
     }
@@ -39,8 +44,8 @@ export const updateEscalationStatus = async (req: Request, res: Response) => {
     const parentIssueStatus = status === "RESOLVED" ? "RESOLVED" : "ESCALATED";
 
     const [escalation] = await prisma.$transaction([
-      (prisma as any).escalation.update({
-        where: { id },
+      prisma.escalation.update({
+        where: { id: id as string },
         data: { status }
       }),
       prisma.issue.update({
@@ -49,7 +54,7 @@ export const updateEscalationStatus = async (req: Request, res: Response) => {
       }),
       ...(status === "RESOLVED"
         ? [
-            (prisma as any).issueNote.create({
+            prisma.issueNote.create({
               data: {
                 content: "Vendor resolved the escalated issue successfully.",
                 issueId: currentEscalation.issueId,
