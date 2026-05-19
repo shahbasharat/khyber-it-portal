@@ -79,7 +79,6 @@ export default function ServerRoomPage() {
     try {
       const response = await api.get("/server-room/heartbeat");
       setHeartbeats(response.data);
-      setHeartbeats(response.data);
     } catch (error) {
       console.error("Failed to fetch heartbeats", error);
     } finally {

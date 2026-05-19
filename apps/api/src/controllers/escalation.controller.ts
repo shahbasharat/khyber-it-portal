@@ -17,7 +17,7 @@ export const getEscalations = async (req: Request, res: Response) => {
     
     res.json(escalations);
   } catch (error) {
-    logger.error({ error }, "Failed to fetch escalations");
+    logger.error(error, "Failed to fetch escalations");
     res.status(500).json({ error: "Failed to fetch escalations" });
   }
 };
@@ -62,7 +62,7 @@ export const updateEscalationStatus = async (req: Request, res: Response) => {
 
     res.json(escalation);
   } catch (error) {
-    logger.error({ error }, "Failed to update escalation");
+    logger.error(error, "Failed to update escalation");
     res.status(500).json({ error: "Failed to update escalation" });
   }
 };

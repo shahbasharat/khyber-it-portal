@@ -10,7 +10,7 @@ export const getUsers = async (req: Request, res: Response) => {
     });
     res.json(users);
   } catch (error) {
-    logger.error({ error }, "Failed to get users");
+    logger.error(error, "Failed to get users");
     res.status(500).json({ error: "Failed to get users" });
   }
 };
@@ -34,7 +34,7 @@ export const createUser = async (req: Request, res: Response) => {
 
     res.status(201).json(user);
   } catch (error) {
-    logger.error({ error }, "Failed to create user");
+    logger.error(error, "Failed to create user");
     res.status(500).json({ error: "Failed to create user" });
   }
 };
@@ -58,7 +58,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     res.json(user);
   } catch (error) {
-    logger.error({ error }, "Failed to update user");
+    logger.error(error, "Failed to update user");
     res.status(500).json({ error: "Failed to update user" });
   }
 };
@@ -78,7 +78,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     await prisma.user.delete({ where: { id } });
     res.json({ success: true });
   } catch (error) {
-    logger.error({ error }, "Failed to delete user");
+    logger.error(error, "Failed to delete user");
     res.status(500).json({ error: "Failed to delete user" });
   }
 };

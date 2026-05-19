@@ -21,7 +21,7 @@ export const getWifiCodes = async (req: Request, res: Response) => {
     });
     res.json(codes);
   } catch (error) {
-    logger.error({ error }, "Failed to fetch wifi codes");
+    logger.error(error, "Failed to fetch wifi codes");
     res.status(500).json({ error: "Failed to fetch wifi codes" });
   }
 };
@@ -41,7 +41,7 @@ export const createWifiCode = async (req: Request, res: Response) => {
     res.status(201).json(code);
   } catch (error: any) {
     if (error.name === "ZodError") return res.status(400).json({ error: error.errors });
-    logger.error({ error }, "Failed to create wifi code");
+    logger.error(error, "Failed to create wifi code");
     res.status(500).json({ error: "Failed to create wifi code" });
   }
 };

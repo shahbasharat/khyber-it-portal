@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
+import logger from "../lib/logger";
 
 export const getNotifications = async (req: any, res: Response) => {
   const userId = req.user.userId;
@@ -12,6 +13,7 @@ export const getNotifications = async (req: any, res: Response) => {
     });
     res.json(notifications);
   } catch (error) {
+    logger.error(error, `Failed to fetch notifications for user ${userId}`);
     res.status(500).json({ error: "Failed to fetch notifications" });
   }
 };
@@ -26,6 +28,7 @@ export const markAsRead = async (req: Request, res: Response) => {
     });
     res.json(notification);
   } catch (error) {
+    logger.error(error, `Failed to update notification ${id} as read`);
     res.status(500).json({ error: "Failed to update notification" });
   }
 };
@@ -42,6 +45,6 @@ export const createNotification = async (userId: string, title: string, message:
       },
     });
   } catch (error) {
-    console.error("Failed to create notification", error);
+    logger.error(error, `Failed to create notification for user ${userId} with title: ${title}`);
   }
 };

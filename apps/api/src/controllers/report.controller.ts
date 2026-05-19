@@ -108,6 +108,7 @@ export const getShiftSummary = async (req: Request, res: Response) => {
       wifiCodes
     });
   } catch (error) {
+    logger.error(error, "Failed to generate shift summary");
     res.status(500).json({ error: "Failed to generate shift summary" });
   }
 };

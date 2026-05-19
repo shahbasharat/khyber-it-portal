@@ -81,7 +81,7 @@ app.get("/health", async (req, res) => {
     await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({ status: "ok", db: "connected" });
   } catch (error) {
-    logger.error({ error }, "Health check failed");
+    logger.error(error, "Health check failed");
     res.status(500).json({ status: "error", db: "disconnected" });
   }
 });
@@ -94,7 +94,7 @@ app.get("/api/issues/status", (req, res) => {
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error(err.stack);
+  logger.error(err, "Global unhandled exception caught");
   res.status(500).json({ error: "Internal Server Error" });
 });
 

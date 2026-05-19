@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
+import logger from "../lib/logger";
 
 export const getStats = async (req: Request, res: Response) => {
   const today = new Date();
@@ -50,6 +51,7 @@ export const getStats = async (req: Request, res: Response) => {
       weeklyTrends
     });
   } catch (error) {
+    logger.error(error, "Failed to fetch stats");
     res.status(500).json({ error: "Failed to fetch stats" });
   }
 };

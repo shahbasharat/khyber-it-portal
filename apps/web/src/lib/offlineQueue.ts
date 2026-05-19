@@ -51,6 +51,8 @@ export const syncOfflineQueue = async (apiInstance: any) => {
         await apiInstance.post(req.url, req.data);
       } else if (req.method.toLowerCase() === "put") {
         await apiInstance.put(req.url, req.data);
+      } else if (req.method.toLowerCase() === "patch") {
+        await apiInstance.patch(req.url, req.data);
       } else if (req.method.toLowerCase() === "delete") {
         await apiInstance.delete(req.url);
       }

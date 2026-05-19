@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
+import logger from "../lib/logger";
 
 export const getDailyChecklist = async (req: any, res: Response) => {
   const userId = req.user.userId;
@@ -48,6 +49,7 @@ export const getDailyChecklist = async (req: any, res: Response) => {
 
     res.json(formattedItems);
   } catch (error) {
+    logger.error(error, "Failed to fetch checklist");
     res.status(500).json({ error: "Failed to fetch checklist" });
   }
 };
@@ -106,6 +108,7 @@ export const updateChecklistItem = async (req: any, res: Response) => {
 
     res.status(201).json(created);
   } catch (error) {
+    logger.error(error, `Failed to update checklist item ${itemId}`);
     res.status(500).json({ error: "Failed to update checklist item" });
   }
 };
@@ -164,6 +167,7 @@ export const bulkUpdateChecklistItems = async (req: any, res: Response) => {
 
     res.json({ success: true, updatedCount: items.length });
   } catch (error) {
+    logger.error(error, `Failed to bulk update checklist category ${category} to status ${status}`);
     res.status(500).json({ error: "Failed to bulk update checklist category" });
   }
 };

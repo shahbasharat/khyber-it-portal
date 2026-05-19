@@ -41,7 +41,7 @@ export const requireAuth = (req: any, res: any, next: any) => {
         req.user.role = user?.role;
         next();
       }).catch((err: any) => {
-        logger.error({ err }, "Failed to verify VIEWER role write protection");
+        logger.error(err, "Failed to verify VIEWER role write protection");
         res.status(500).json({ error: "Internal Server Error" });
       });
     } else {

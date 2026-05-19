@@ -155,7 +155,7 @@ export const getMe = async (req: any, res: Response) => {
     });
     res.json(user);
   } catch (error) {
-    logger.error({ error }, "Failed to fetch user");
+    logger.error(error, "Failed to fetch user");
     res.status(500).json({ error: "Failed to fetch user" });
   }
 };
@@ -191,7 +191,7 @@ export const changePassword = async (req: any, res: Response) => {
     logger.info({ userId: user.id }, "Password changed successfully");
     res.json({ success: true });
   } catch (error) {
-    logger.error({ error }, "Failed to change password");
+    logger.error(error, "Failed to change password");
     res.status(500).json({ error: "Failed to change password" });
   }
 };

@@ -13,10 +13,10 @@ export const initCronJobs = () => {
       if (result.success) {
         logger.info("Successfully sent weekly report email.");
       } else {
-        logger.error({ error: result.error }, "Failed to send weekly report email via cron.");
+        logger.error(result.error, "Failed to send weekly report email via cron.");
       }
     } catch (error) {
-      logger.error({ error }, "Error in weekly report cron job.");
+      logger.error(error, "Error in weekly report cron job.");
     }
   }, { timezone: "Asia/Kolkata" });
 

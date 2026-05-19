@@ -16,7 +16,7 @@ export const getServerRoomLogs = async (req: Request, res: Response) => {
     });
     res.json(logs);
   } catch (error) {
-    logger.error({ error }, "Failed to fetch server room logs");
+    logger.error(error, "Failed to fetch server room logs");
     res.status(500).json({ error: "Failed to fetch server room logs" });
   }
 };
@@ -35,7 +35,7 @@ export const createServerRoomLog = async (req: Request, res: Response) => {
     res.status(201).json(log);
   } catch (error: any) {
     if (error.name === "ZodError") return res.status(400).json({ error: error.errors });
-    logger.error({ error }, "Failed to create server room log");
+    logger.error(error, "Failed to create server room log");
     res.status(500).json({ error: "Failed to create server room log" });
   }
 };
@@ -66,7 +66,7 @@ export const getServerHeartbeats = async (req: Request, res: Response) => {
 
     res.json(heartbeats);
   } catch (error) {
-    logger.error({ error }, "Failed to fetch server heartbeats");
+    logger.error(error, "Failed to fetch server heartbeats");
     res.status(500).json({ error: "Failed to fetch server heartbeats" });
   }
 };
@@ -91,7 +91,7 @@ export const createNetworkDevice = async (req: Request, res: Response) => {
     res.status(201).json(device);
   } catch (error: any) {
     if (error.name === "ZodError") return res.status(400).json({ error: error.errors });
-    logger.error({ error }, "Failed to create network device");
+    logger.error(error, "Failed to create network device");
     res.status(500).json({ error: "Failed to create network device" });
   }
 };
@@ -109,7 +109,7 @@ export const deleteNetworkDevice = async (req: Request, res: Response) => {
     });
     res.json({ success: true, message: "Network device removed successfully." });
   } catch (error) {
-    logger.error({ error, id }, "Failed to delete network device");
+    logger.error({ err: error, id }, "Failed to delete network device");
     res.status(500).json({ error: "Failed to delete network device" });
   }
 };

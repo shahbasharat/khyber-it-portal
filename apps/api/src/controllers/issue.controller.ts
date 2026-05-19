@@ -40,7 +40,7 @@ export const getIssues = async (req: Request, res: Response) => {
     });
     res.json(issues);
   } catch (error) {
-    logger.error({ error, query: req.query }, "Failed to fetch issues");
+    logger.error({ err: error, query: req.query }, "Failed to fetch issues");
     res.status(500).json({ error: "Failed to fetch issues" });
   }
 };
@@ -64,7 +64,7 @@ export const getIssueById = async (req: Request, res: Response) => {
     if (!issue) return res.status(404).json({ error: "Issue not found" });
     res.json(issue);
   } catch (error) {
-    logger.error({ error, issueId: id }, "Failed to fetch issue");
+    logger.error({ err: error, issueId: id }, "Failed to fetch issue");
     res.status(500).json({ error: "Failed to fetch issue" });
   }
 };
@@ -108,7 +108,7 @@ export const createIssue = async (req: any, res: Response) => {
     if (error.name === "ZodError") {
       return res.status(400).json({ error: error.errors });
     }
-    logger.error({ error }, "Failed to create issue");
+    logger.error(error, "Failed to create issue");
     res.status(500).json({ error: "Failed to create issue" });
   }
 };
@@ -155,7 +155,7 @@ export const updateIssue = async (req: Request, res: Response) => {
     if (error.name === "ZodError") {
       return res.status(400).json({ error: error.errors });
     }
-    logger.error({ error, issueId: id }, "Failed to update issue");
+    logger.error({ err: error, issueId: id }, "Failed to update issue");
     res.status(500).json({ error: "Failed to update issue" });
   }
 };
@@ -180,7 +180,7 @@ export const addIssueNote = async (req: Request, res: Response) => {
     res.status(201).json(note);
   } catch (error: any) {
     if (error.name === "ZodError") return res.status(400).json({ error: error.errors });
-    logger.error({ error, issueId: id }, "Failed to add note to issue");
+    logger.error({ err: error, issueId: id }, "Failed to add note to issue");
     res.status(500).json({ error: "Failed to add note" });
   }
 };
@@ -222,7 +222,7 @@ export const escalateIssue = async (req: Request, res: Response) => {
     res.status(201).json(escalation);
   } catch (error: any) {
     if (error.name === "ZodError") return res.status(400).json({ error: error.errors });
-    logger.error({ error, issueId: id }, "Failed to escalate issue");
+    logger.error({ err: error, issueId: id }, "Failed to escalate issue");
     res.status(500).json({ error: "Failed to escalate issue" });
   }
 };
@@ -246,7 +246,7 @@ export const getCarryOverIssues = async (req: Request, res: Response) => {
     });
     res.json(carryOver);
   } catch (error) {
-    logger.error({ error }, "Failed to fetch carry-over issues");
+    logger.error(error, "Failed to fetch carry-over issues");
     res.status(500).json({ error: "Failed to fetch carry-over issues" });
   }
 };

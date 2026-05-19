@@ -460,7 +460,7 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
       doc.end();
     });
   } catch (error) {
-    logger.error({ error, reportId }, "Failed to compile single report PDF");
+    logger.error({ err: error, reportId }, "Failed to compile single report PDF");
     throw error;
   }
 };

@@ -12,7 +12,7 @@ export const getActivities = async (req: Request, res: Response) => {
     });
     res.json(activities);
   } catch (error) {
-    logger.error({ error }, "Failed to fetch asset activities");
+    logger.error(error, "Failed to fetch asset activities");
     res.status(500).json({ error: "Failed to fetch asset activities" });
   }
 };
@@ -42,7 +42,7 @@ export const createActivity = async (req: Request, res: Response) => {
 
     res.status(201).json(newActivity);
   } catch (error) {
-    logger.error({ error }, "Failed to create asset activity");
+    logger.error(error, "Failed to create asset activity");
     res.status(500).json({ error: "Failed to create asset activity" });
   }
 };
