@@ -11,21 +11,63 @@ const cleanEnvVar = (val: string | undefined, defaultVal: string = ""): string =
 
 // Unified Email Sender Helper with Dynamic SMTP & Smart Brevo/Gmail Detection
 export const sendEmail = async (options: { to: string[]; subject: string; html: string; attachments?: any[] }) => {
+  const resendApiKey = cleanEnvVar(process.env.RESEND_API_KEY);
   const smtpUser = cleanEnvVar(process.env.SMTP_USER, "itkhyber@gmail.com");
   const smtpPass = cleanEnvVar(process.env.SMTP_PASS);
   const smtpHost = cleanEnvVar(process.env.SMTP_HOST, "smtp.gmail.com");
   const smtpPort = Number(cleanEnvVar(process.env.SMTP_PORT, "587"));
   const senderName = "Khyber IT Operations";
 
+  const sanitizedTo = options.to.map(email => cleanEnvVar(email)).filter(Boolean);
+
+  // 1. Prioritize Resend HTTPS API (bypasses Railway SMTP port blocking)
+  if (resendApiKey) {
+    try {
+      const formattedAttachments = options.attachments?.map(att => ({
+        filename: att.filename,
+        content: Buffer.isBuffer(att.content)
+          ? att.content.toString("base64")
+          : Buffer.from(att.content).toString("base64")
+      })) || [];
+
+      // Resend Free Tier Sandbox allows sending to the account owner (itkhyber@gmail.com) via onboarding@resend.dev
+      const fromEmail = "onboarding@resend.dev";
+
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: `"${senderName}" <${fromEmail}>`,
+          to: sanitizedTo,
+          subject: options.subject,
+          html: options.html,
+          attachments: formattedAttachments
+        })
+      });
+
+      const responseBody = await res.json();
+      if (!res.ok) {
+        throw new Error(responseBody.message || JSON.stringify(responseBody));
+      }
+
+      logger.info({ messageId: responseBody.id }, "Email dispatched successfully via Resend HTTPS API");
+      return { success: true };
+    } catch (error) {
+      logger.error(error, "Resend API dispatch failed. Falling back to SMTP if configured.");
+    }
+  }
+
+  // 2. Fallback to traditional SMTP
   if (!smtpPass) {
     logger.warn("SMTP_PASS is not configured in environment variables. Email dispatch will log to console.");
-    logger.info({ to: options.to, subject: options.subject }, "EMAIL LOG (SMTP Not Configured)");
-    return { success: false, error: "SMTP_PASS not configured" };
+    logger.info({ to: options.to, subject: options.subject }, "EMAIL LOG (SMTP/Resend Not Configured)");
+    return { success: false, error: "Email provider not configured" };
   }
 
   try {
-    const sanitizedTo = options.to.map(email => cleanEnvVar(email)).filter(Boolean);
-
     // Dynamically configure transporter based on Brevo vs Gmail credentials
     let transporterOptions: any = {
       host: smtpUser.includes("brevo.com") || smtpUser.includes("sendinblue.com") ? "smtp-relay.brevo.com" : smtpHost,
@@ -37,7 +79,7 @@ export const sendEmail = async (options: { to: string[]; subject: string; html: 
       },
     };
 
-    // If using Gmail credentials, configure using service: "gmail" (highly optimized & avoids connection routing issues in cloud hosts)
+    // If using Gmail credentials, configure using service: "gmail"
     if ((smtpHost.includes("gmail.com") || smtpUser.includes("gmail.com")) && !smtpUser.includes("brevo.com")) {
       transporterOptions = {
         service: "gmail",
