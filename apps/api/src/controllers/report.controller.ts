@@ -61,8 +61,8 @@ export const getShiftSummary = async (req: Request, res: Response) => {
     ]);
 
     // Compute all checklist items (merging actual responses and missed checks)
-    const fullChecklist = checklistItemsList.map(item => {
-      const response = checklistDetails.find(r => r.checklistItemId === item.id);
+    const fullChecklist = checklistItemsList.map((item: any) => {
+      const response = checklistDetails.find((r: any) => r.checklistItemId === item.id);
       let status = (response as any)?.status || "PENDING";
       if (response?.completed && status === "PENDING") {
         status = "WORKING";
@@ -80,8 +80,8 @@ export const getShiftSummary = async (req: Request, res: Response) => {
 
     // Compile active team members on duty
     const activeStaff = new Set<string>();
-    checklistDetails.forEach(r => activeStaff.add(r.user.name));
-    issuesDetails.forEach(i => {
+    checklistDetails.forEach((r: any) => activeStaff.add(r.user.name));
+    issuesDetails.forEach((i: any) => {
       activeStaff.add(i.reporter.name);
       if (i.assignee) activeStaff.add(i.assignee.name);
     });
@@ -156,7 +156,7 @@ export const createShiftReport = async (req: any, res: Response) => {
 
     res.status(201).json(report);
   } catch (error) {
-    logger.error({ error }, "Failed to create shift report");
+    logger.error(error, "Failed to create shift report");
     res.status(500).json({ error: "Failed to create shift report" });
   }
 };
@@ -172,7 +172,7 @@ export const sendTestWeeklyReport = async (req: Request, res: Response) => {
       res.status(500).json({ error: "Failed to send test report", details: result.error });
     }
   } catch (error) {
-    logger.error({ error }, "Error in test report route");
+    logger.error(error, "Error in test report route");
     res.status(500).json({ error: "Failed to generate test report" });
   }
 };
@@ -186,7 +186,7 @@ export const downloadReportPDF = async (req: Request, res: Response) => {
     res.setHeader("Content-Disposition", `attachment; filename=KHY_Handover_Report_${id.substring(0, 6)}.pdf`);
     res.send(pdfBuffer);
   } catch (error) {
-    logger.error({ error, reportId: req.params.id as string }, "Failed to generate report PDF download");
+    logger.error(error, `Failed to generate report PDF download for reportId ${req.params.id}`);
     res.status(500).json({ error: "Failed to generate report PDF" });
   }
 };

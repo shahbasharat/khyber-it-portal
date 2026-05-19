@@ -3,12 +3,17 @@ import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
 import nodemailer from "nodemailer";
 
+const cleanEnvVar = (val: string | undefined, defaultVal: string = ""): string => {
+  if (!val) return defaultVal;
+  return val.trim().replace(/^['"]|['"]$/g, ""); // strip leading/trailing single or double quotes and trim whitespace
+};
+
 // Unified Email Sender Helper with Dynamic SMTP & Smart Brevo/Gmail Detection
 export const sendEmail = async (options: { to: string[]; subject: string; html: string; attachments?: any[] }) => {
-  const smtpUser = process.env.SMTP_USER || "itkhyber@gmail.com";
-  const smtpPass = process.env.SMTP_PASS;
-  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
-  const smtpPort = Number(process.env.SMTP_PORT || 587);
+  const smtpUser = cleanEnvVar(process.env.SMTP_USER, "itkhyber@gmail.com");
+  const smtpPass = cleanEnvVar(process.env.SMTP_PASS);
+  const smtpHost = cleanEnvVar(process.env.SMTP_HOST, "smtp.gmail.com");
+  const smtpPort = Number(cleanEnvVar(process.env.SMTP_PORT, "587"));
   const senderName = "Khyber IT Operations";
 
   if (!smtpPass) {
@@ -18,27 +23,26 @@ export const sendEmail = async (options: { to: string[]; subject: string; html: 
   }
 
   try {
+    const sanitizedTo = options.to.map(email => cleanEnvVar(email)).filter(Boolean);
+
     // Dynamically configure transporter based on Brevo vs Gmail credentials
     let transporterOptions: any = {
       host: smtpUser.includes("brevo.com") || smtpUser.includes("sendinblue.com") ? "smtp-relay.brevo.com" : smtpHost,
       port: smtpPort,
       secure: smtpPort === 465,
       auth: {
-        user: smtpUser.trim(),
-        pass: smtpPass.trim().replace(/['"]/g, ""),
+        user: smtpUser,
+        pass: smtpPass,
       },
     };
 
-    // If using Gmail credentials, use explicit secure host config to prevent cloud IP blocking
+    // If using Gmail credentials, configure using service: "gmail" (highly optimized & avoids connection routing issues in cloud hosts)
     if ((smtpHost.includes("gmail.com") || smtpUser.includes("gmail.com")) && !smtpUser.includes("brevo.com")) {
       transporterOptions = {
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        requireTLS: true,
+        service: "gmail",
         auth: {
-          user: smtpUser.trim(),
-          pass: smtpPass.trim().replace(/['"]/g, ""), // Strip accidental quotes or spaces from Railway dashboard variables
+          user: smtpUser,
+          pass: smtpPass,
         },
       };
     }
@@ -52,17 +56,17 @@ export const sendEmail = async (options: { to: string[]; subject: string; html: 
 
     const mailOptions = {
       from: `"${senderName}" <${smtpUser}>`,
-      to: options.to.join(", "),
+      to: sanitizedTo.join(", "),
       subject: options.subject,
       html: options.html,
       attachments: formattedAttachments
     };
 
     const info = await transporter.sendMail(mailOptions);
-    logger.info({ messageId: info.messageId, host: transporterOptions.host || transporterOptions.service }, "Email dispatched successfully via SMTP");
+    logger.info({ messageId: info.messageId, host: transporterOptions.host || transporterOptions.service || "gmail" }, "Email dispatched successfully via SMTP");
     return { success: true };
   } catch (error) {
-    logger.error({ error, smtpUser }, "SMTP dispatch failed");
+    logger.error(error, `SMTP dispatch failed for user ${smtpUser}`);
     return { success: false, error: (error as Error).message || error };
   }
 };
@@ -118,18 +122,18 @@ export const sendShiftReminder = async (shiftType: "MORNING" | "AFTERNOON") => {
       `
     });
   } catch (error) {
-    logger.error({ error }, "Error in sendShiftReminder service");
+    logger.error(error, "Error in sendShiftReminder service");
   }
 };
 
 export const sendHandoverNotification = async (engineerName: string, content: string, reportId: string, customRecipients?: string[]) => {
-  const managerEmail = process.env.MANAGER_EMAIL;
+  const managerEmail = cleanEnvVar(process.env.MANAGER_EMAIL);
   if (!managerEmail && (!customRecipients || customRecipients.length === 0)) return;
 
   try {
     const recipients = customRecipients && customRecipients.length > 0
       ? customRecipients
-      : managerEmail!.split(",").map(e => e.trim());
+      : managerEmail.split(",").map(e => e.trim());
 
     // Generate single PDF report to attach dynamically
     let attachments: any[] = [];
@@ -143,7 +147,7 @@ export const sendHandoverNotification = async (engineerName: string, content: st
         }
       ];
     } catch (pdfErr) {
-      logger.error({ pdfErr }, "Failed to compile and attach PDF to shift handover email");
+      logger.error(pdfErr, "Failed to compile and attach PDF to shift handover email");
     }
 
     await sendEmail({
@@ -163,12 +167,12 @@ export const sendHandoverNotification = async (engineerName: string, content: st
       attachments
     });
   } catch (error) {
-    logger.error({ error }, "Error in sendHandoverNotification service");
+    logger.error(error, "Error in sendHandoverNotification service");
   }
 };
 
 export const sendCriticalIssueEmail = async (issue: any) => {
-  const managerEmail = process.env.MANAGER_EMAIL;
+  const managerEmail = cleanEnvVar(process.env.MANAGER_EMAIL);
   if (!managerEmail) return;
 
   try {
@@ -192,12 +196,12 @@ export const sendCriticalIssueEmail = async (issue: any) => {
       `
     });
   } catch (error) {
-    logger.error({ error }, "Error in sendCriticalIssueEmail service");
+    logger.error(error, "Error in sendCriticalIssueEmail service");
   }
 };
 
 export const sendEscalationEmail = async (issueTitle: string, escalation: any, engineerName: string) => {
-  const managerEmail = process.env.MANAGER_EMAIL;
+  const managerEmail = cleanEnvVar(process.env.MANAGER_EMAIL);
   if (!managerEmail) return;
 
   try {
@@ -222,6 +226,6 @@ export const sendEscalationEmail = async (issueTitle: string, escalation: any, e
       `
     });
   } catch (error) {
-    logger.error({ error }, "Error in sendEscalationEmail service");
+    logger.error(error, "Error in sendEscalationEmail service");
   }
 };
