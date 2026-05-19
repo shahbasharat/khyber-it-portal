@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { FileText, Download, Printer, Loader2, ClipboardCheck, AlertCircle, CheckCircle, Clock, Users, Flame, AlertTriangle, CheckCircle2, Activity } from "lucide-react";
+import { FileText, Download, Printer, Loader2, ClipboardCheck, AlertCircle, CheckCircle, Clock, Users, Flame, AlertTriangle, CheckCircle2, Activity, History, ChevronLeft, ChevronRight, User } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, formatDistanceStrict } from "date-fns";
 
 interface ChecklistItem {
   id: string;
@@ -94,11 +94,47 @@ interface ReportData {
   wifiCodes: GuestWifiCode[];
 }
 
+interface HistoryReport {
+  id: string;
+  content: string;
+  usersSupported: number;
+  downtime: number;
+  createdAt: string;
+  engineer: string;
+  engineerRole: string;
+  shiftStart: string;
+  shiftEnd: string | null;
+}
+
 export default function ReportsPage() {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+
+  // History state
+  const [history, setHistory] = useState<HistoryReport[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const fetchHistory = async (page = 1) => {
+    setHistoryLoading(true);
+    try {
+      const res = await api.get(`/reports/history?page=${page}&limit=15`);
+      setHistory(res.data.data);
+      setHistoryTotal(res.data.total);
+      setHistoryTotalPages(res.data.totalPages);
+      setHistoryPage(page);
+    } catch (e) {
+      console.error("Failed to fetch report history", e);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const getDuration = (start: string, end: string) => {
     const diffMs = new Date(end).getTime() - new Date(start).getTime();
@@ -107,6 +143,25 @@ export default function ReportsPage() {
     const diffHours = Math.floor(diffMins / 60);
     const remainingMins = diffMins % 60;
     return `${diffHours}h ${remainingMins}m`;
+  };
+
+  const handleDownloadHistoryPDF = async (reportId: string) => {
+    setExportingId(reportId);
+    try {
+      const response = await api.get(`/reports/${reportId}/pdf`, { responseType: "blob" });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `KHY_Report_${reportId.substring(0, 6)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch {
+      alert("Failed to download PDF.");
+    } finally {
+      setExportingId(null);
+    }
   };
 
   const handleExportPDF = async () => {
@@ -149,6 +204,13 @@ export default function ReportsPage() {
     };
     fetchReport();
   }, []);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === "history" && history.length === 0) {
+      fetchHistory(1);
+    }
+  };
 
   if (loading) return (
     <div className="flex flex-col justify-center items-center h-64 text-slate-mid gap-3">
@@ -232,17 +294,19 @@ export default function ReportsPage() {
           { id: "incidents", label: "Incidents Faced", count: data.issues.length },
           { id: "serverLogs", label: "Server Logs", count: data.serverLogs.length },
           { id: "wifiCodes", label: "Wi-Fi Vouchers", count: data.wifiCodes.length },
-          { id: "notes", label: "Handover Notes", count: null }
+          { id: "notes", label: "Handover Notes", count: null },
+          { id: "history", label: "Past Reports", count: historyTotal > 0 ? historyTotal : null },
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-2 shadow-sm ${
               activeTab === tab.id 
                 ? "bg-fir-green text-white shadow-fir-green/20 scale-105" 
                 : "bg-cream text-slate-dark hover:bg-cream/80 border border-slate-border/40"
             }`}
           >
+            {tab.id === "history" && <History size={13} />}
             {tab.label}
             {tab.count !== null && (
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
@@ -615,6 +679,130 @@ export default function ReportsPage() {
           Handover report generated automatically by the Khyber IT Operations Portal. This document serves as the official IT operational record for the resort.
         </div>
       </div>
+
+      {/* ── Past Reports History ── */}
+      {activeTab === "history" && (
+        <div className="flex flex-col gap-4 print:hidden">
+          <div className="bg-fir-green text-white text-sm font-extrabold uppercase py-2.5 px-4 rounded-xl tracking-wider shadow-sm flex items-center gap-2">
+            <History size={18} /> Past Shift Reports — Full Archive
+          </div>
+
+          {historyLoading ? (
+            <div className="flex justify-center items-center py-16 text-slate-mid gap-3">
+              <Loader2 className="animate-spin text-fir-green" size={28} />
+              <span className="text-sm font-medium">Loading report archive...</span>
+            </div>
+          ) : history.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-border/50 p-12 text-center text-slate-mid">
+              <History size={40} className="mx-auto mb-3 opacity-30" />
+              <p className="font-semibold">No past reports found.</p>
+              <p className="text-xs mt-1">Reports will appear here once engineers submit their shift handovers.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {history.map((report) => (
+                <div key={report.id} className="bg-white rounded-2xl border border-slate-border/50 shadow-sm overflow-hidden">
+                  {/* Report header row */}
+                  <div
+                    className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-5 cursor-pointer hover:bg-cream/30 transition-colors"
+                    onClick={() => setExpandedId(expandedId === report.id ? null : report.id)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-fir-green-subtle flex items-center justify-center shrink-0">
+                        <FileText size={18} className="text-fir-green" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-dark text-sm">
+                          {format(new Date(report.createdAt), "EEEE, dd MMMM yyyy")}
+                        </p>
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                          <span className="text-xs text-slate-mid flex items-center gap-1">
+                            <User size={11} /> {report.engineer}
+                            <span className="text-[10px] text-slate-mid/60 ml-1">({report.engineerRole.replace("_", " ")})</span>
+                          </span>
+                          <span className="text-xs text-slate-mid flex items-center gap-1">
+                            <Clock size={11} />
+                            {format(new Date(report.shiftStart), "hh:mm a")}
+                            {report.shiftEnd ? ` → ${format(new Date(report.shiftEnd), "hh:mm a")}` : " → Present"}
+                            {report.shiftEnd && (
+                              <span className="text-[10px] text-fir-green font-bold ml-1">
+                                ({formatDistanceStrict(new Date(report.shiftStart), new Date(report.shiftEnd))})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex gap-4 text-xs text-slate-mid">
+                        <span className="flex flex-col items-center">
+                          <span className="font-extrabold text-slate-dark text-base">{report.usersSupported}</span>
+                          <span className="text-[10px] uppercase tracking-wide">Users</span>
+                        </span>
+                        <span className="flex flex-col items-center">
+                          <span className="font-extrabold text-amber-600 text-base">{report.downtime}m</span>
+                          <span className="text-[10px] uppercase tracking-wide">Downtime</span>
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDownloadHistoryPDF(report.id); }}
+                        disabled={exportingId === report.id}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-antique-gold text-white rounded-xl text-xs font-bold hover:bg-antique-gold/90 transition-all disabled:opacity-50 shrink-0"
+                      >
+                        {exportingId === report.id ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <Download size={13} />
+                        )}
+                        PDF
+                      </button>
+                      <span className="text-slate-mid text-xs font-bold">
+                        {expandedId === report.id ? "▲" : "▼"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Expanded handover notes */}
+                  {expandedId === report.id && (
+                    <div className="border-t border-slate-border/40 px-5 py-4 bg-cream/20">
+                      <p className="text-xs font-bold text-slate-mid uppercase tracking-wider mb-2">Handover Notes</p>
+                      <p className="text-sm text-slate-dark leading-relaxed whitespace-pre-line italic">
+                        {report.content || "No handover notes provided."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Pagination */}
+              {historyTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-xs text-slate-mid">
+                    Showing {(historyPage - 1) * 15 + 1}–{Math.min(historyPage * 15, historyTotal)} of {historyTotal} reports
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => fetchHistory(historyPage - 1)}
+                      disabled={historyPage <= 1}
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-border/50 text-xs font-bold text-slate-dark hover:bg-cream disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft size={14} /> Prev
+                    </button>
+                    <button
+                      onClick={() => fetchHistory(historyPage + 1)}
+                      disabled={historyPage >= historyTotalPages}
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-border/50 text-xs font-bold text-slate-dark hover:bg-cream disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -128,7 +128,7 @@ export const createShiftReport = async (req: any, res: Response) => {
       customRecipients = recipientEmails.split(",").map(e => e.trim()).filter(e => e.length > 0);
     }
 
-    // Find the active shift or create a dummy one for the report
+    // Find the active shift or create one
     let shift = await prisma.shift.findFirst({
       where: { userId, endTime: null },
       orderBy: { startTime: "desc" }
@@ -139,6 +139,14 @@ export const createShiftReport = async (req: any, res: Response) => {
         data: { userId, startTime: new Date() }
       });
     }
+
+    const now = new Date();
+
+    // Close the shift by setting endTime
+    await prisma.shift.update({
+      where: { id: shift.id },
+      data: { endTime: now }
+    });
 
     const report = await prisma.report.create({
       data: {
@@ -189,5 +197,46 @@ export const downloadReportPDF = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(error, `Failed to generate report PDF download for reportId ${req.params.id}`);
     res.status(500).json({ error: "Failed to generate report PDF" });
+  }
+};
+
+export const getReportHistory = async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
+    const skip = (page - 1) * limit;
+
+    const [reports, total] = await Promise.all([
+      prisma.report.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: {
+          shift: {
+            include: {
+              user: { select: { id: true, name: true, role: true } }
+            }
+          }
+        }
+      }),
+      prisma.report.count()
+    ]);
+
+    const formatted = reports.map(r => ({
+      id: r.id,
+      content: r.content,
+      usersSupported: r.usersSupported,
+      downtime: r.downtime,
+      createdAt: r.createdAt,
+      engineer: r.shift.user.name,
+      engineerRole: r.shift.user.role,
+      shiftStart: r.shift.startTime,
+      shiftEnd: r.shift.endTime,
+    }));
+
+    res.json({ data: formatted, total, page, limit, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    logger.error(error, "Failed to fetch report history");
+    res.status(500).json({ error: "Failed to fetch report history" });
   }
 };
