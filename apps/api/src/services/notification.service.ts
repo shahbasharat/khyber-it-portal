@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
 import logger from "../lib/logger";
 import nodemailer from "nodemailer";
+import { generateSingleReportPDF } from "./pdf.service";
 
 const cleanEnvVar = (val: string | undefined, defaultVal: string = ""): string => {
   if (!val) return defaultVal;
@@ -138,7 +139,6 @@ export const sendHandoverNotification = async (engineerName: string, content: st
     // Generate single PDF report to attach dynamically
     let attachments: any[] = [];
     try {
-      const { generateSingleReportPDF } = require("./pdf.service");
       const pdfBuffer = await generateSingleReportPDF(reportId);
       attachments = [
         {
