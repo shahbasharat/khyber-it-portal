@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   initAuth: async () => {
     try {
-      // First refresh to get a valid access token (handles page reloads)
+      // Try to get a fresh access token via the refresh cookie
       const refreshRes = await api.post("/auth/refresh");
       const { accessToken } = refreshRes.data;
 
@@ -38,8 +38,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       set({ user: meRes.data, accessToken, isInitialized: true });
     } catch {
-      // No valid session — mark as initialized so the app can redirect to login
-      set({ isInitialized: true });
+      // No valid session (no cookie, expired, etc.) — just mark initialized
+      // The dashboard layout will redirect to /login if user is null
+      set({ user: null, accessToken: null, isInitialized: true });
     }
   },
 }));
