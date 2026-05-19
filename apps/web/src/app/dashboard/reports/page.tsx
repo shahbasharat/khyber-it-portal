@@ -257,11 +257,8 @@ export default function ReportsPage() {
 
       <div className="bg-white border-2 border-slate-dark p-8 rounded-3xl print:p-0 print:border-none shadow-xl print:shadow-none flex flex-col gap-8 font-sans print-sheet">
         <div className="border-4 double border-[#19433E] p-6 rounded-2xl text-center bg-cream/20 shadow-inner print:bg-transparent print:border-2 print:p-4">
-          <h1 className="text-2xl md:text-4xl font-extrabold text-fir-green tracking-tight uppercase font-display border-b-2 border-fir-green/40 pb-4 flex flex-col items-center gap-1">
-            <span>Professional IT Shift Handover Report</span>
-            <span className="text-lg md:text-2xl text-[#C5A880] font-bold tracking-normal normal-case font-sans block mt-1">
-              "Khyber's Daily IT Flash"
-            </span>
+          <h1 className="text-2xl md:text-4xl font-extrabold text-fir-green tracking-tight uppercase font-display border-b-2 border-fir-green/40 pb-4 text-center">
+            Khyber's Daily IT Flash
           </h1>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6 text-left text-sm font-semibold text-slate-dark">
             <div className="bg-white p-3.5 rounded-xl border border-slate-border/50 shadow-sm print:border-none print:p-0 print:shadow-none print:bg-transparent">

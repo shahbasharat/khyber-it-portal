@@ -99,23 +99,21 @@ export const generateSingleReportPDF = async (reportId: string): Promise<Buffer>
         doc.image(logoPath, 40, 40, { width: 50 });
         
         // Branded title
-        doc.fillColor("#19433E").fontSize(14).font("Helvetica-Bold").text("THE KHYBER HIMALAYAN RESORT & SPA", 100, 40, { align: "left" });
-        doc.fontSize(9).font("Helvetica-Bold").fillColor("#C5A880").text("Professional IT Shift Handover Report", 100, 56, { align: "left" });
-        doc.fontSize(11).font("Helvetica-BoldOblique").fillColor("#19433E").text("\"Khyber's Daily IT Flash\"", 100, 70, { align: "left" });
+        doc.fillColor("#19433E").fontSize(14).font("Helvetica-Bold").text("THE KHYBER HIMALAYAN RESORT & SPA", 100, 45, { align: "left" });
+        doc.fontSize(12).font("Helvetica-Bold").fillColor("#C5A880").text("Khyber's Daily IT Flash", 100, 65, { align: "left" });
         
         // Date Meta
-        doc.fillColor("#333333").fontSize(9).font("Helvetica-Bold").text(format(new Date(report.createdAt), "dd MMM yyyy").toUpperCase(), 400, 40, { align: "right", width: 140 });
-        doc.fontSize(8).font("Helvetica").fillColor("#777777").text(format(new Date(report.createdAt), "hh:mm a"), 400, 54, { align: "right", width: 140 });
+        doc.fillColor("#333333").fontSize(9).font("Helvetica-Bold").text(format(new Date(report.createdAt), "dd MMM yyyy").toUpperCase(), 400, 45, { align: "right", width: 140 });
+        doc.fontSize(8).font("Helvetica").fillColor("#777777").text(format(new Date(report.createdAt), "hh:mm a"), 400, 59, { align: "right", width: 140 });
       } else {
         // Fallback banner if logo not present in workspace
         doc.rect(40, 40, 515, 60).fill("#19433E");
         
-        doc.fillColor("#FDFBF7").fontSize(14).font("Helvetica-Bold").text("THE KHYBER HIMALAYAN RESORT & SPA", 55, 45, { align: "left" });
-        doc.fontSize(9).font("Helvetica").text("Professional IT Shift Handover Report", 55, 61, { align: "left" });
-        doc.fontSize(10).font("Helvetica-BoldOblique").fillColor("#C5A880").text("\"Khyber's Daily IT Flash\"", 55, 75, { align: "left" });
+        doc.fillColor("#FDFBF7").fontSize(14).font("Helvetica-Bold").text("THE KHYBER HIMALAYAN RESORT & SPA", 55, 48, { align: "left" });
+        doc.fontSize(12).font("Helvetica-Bold").fillColor("#C5A880").text("Khyber's Daily IT Flash", 55, 68, { align: "left" });
         
-        doc.fillColor("#FDFBF7").fontSize(9).font("Helvetica-Bold").text(format(new Date(report.createdAt), "dd MMM yyyy").toUpperCase(), 400, 45, { align: "right", width: 140 });
-        doc.fontSize(8).font("Helvetica").text(format(new Date(report.createdAt), "hh:mm a"), 400, 61, { align: "right", width: 140 });
+        doc.fillColor("#FDFBF7").fontSize(9).font("Helvetica-Bold").text(format(new Date(report.createdAt), "dd MMM yyyy").toUpperCase(), 400, 48, { align: "right", width: 140 });
+        doc.fontSize(8).font("Helvetica").text(format(new Date(report.createdAt), "hh:mm a"), 400, 64, { align: "right", width: 140 });
       }
 
       // Gold Divider lines

@@ -152,10 +152,10 @@ export const sendHandoverNotification = async (engineerName: string, content: st
 
     await sendEmail({
       to: recipients,
-      subject: `New Shift Handover Report from ${engineerName}`,
+      subject: `Khyber's Daily IT Flash - ${engineerName}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #004d40;">Shift Handover Report</h2>
+          <h2 style="color: #004d40;">Khyber's Daily IT Flash</h2>
           <p><strong>Submitted by:</strong> ${engineerName}</p>
           <div style="margin-top: 20px; padding: 15px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; white-space: pre-wrap;">
             ${content}
