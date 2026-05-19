@@ -48,7 +48,7 @@ export default function NewShiftReportPage() {
             <FileText className="text-antique-gold" size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold font-display text-slate-dark">Shift Handover Report</h1>
+            <h1 className="text-2xl font-bold font-display text-slate-dark">Khyber's Daily IT Flash</h1>
             <p className="text-slate-mid text-sm">Submit your end-of-shift notes for the incoming team and management.</p>
           </div>
         </div>

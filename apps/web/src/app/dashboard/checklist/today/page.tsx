@@ -161,7 +161,7 @@ export default function ChecklistPage() {
     return (
       <div className="flex flex-col justify-center items-center h-64 text-slate-mid gap-3">
         <Loader2 className="animate-spin text-fir-green" size={36} />
-        <span className="text-sm font-medium">Loading Operational Checklist Data...</span>
+        <span className="text-sm font-medium">Loading Khyber's Daily IT Flash...</span>
       </div>
     );
   }
@@ -207,7 +207,7 @@ export default function ChecklistPage() {
             <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full w-max text-xs font-medium backdrop-blur-sm">
               <Clock size={14} className="text-cream" /> Midnight Auto-Reset Active
             </div>
-            <h2 className="text-3xl font-extrabold font-display tracking-tight text-white">Daily Operations Checklist</h2>
+            <h2 className="text-3xl font-extrabold font-display tracking-tight text-white">Khyber's Daily IT Flash</h2>
             <p className="text-sm text-cream/80 max-w-lg">
               Live operational dashboard for {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Select operational status and enter specific remarks for each interface.
             </p>

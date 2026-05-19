@@ -153,7 +153,7 @@ export default function ReportsPage() {
   if (loading) return (
     <div className="flex flex-col justify-center items-center h-64 text-slate-mid gap-3">
       <Loader2 className="animate-spin text-fir-green" size={36} />
-      <span className="text-sm font-medium">Generating IT Operational Shift Report...</span>
+      <span className="text-sm font-medium">Generating Khyber's Daily IT Flash...</span>
     </div>
   );
 
@@ -186,7 +186,7 @@ export default function ReportsPage() {
           <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full w-max text-xs font-medium backdrop-blur-sm">
             <Activity size={14} className="text-cream" /> Live Executive Report
           </div>
-          <h2 className="text-3xl font-extrabold text-white font-display tracking-tight">IT Operational Shift Report</h2>
+          <h2 className="text-3xl font-extrabold text-white font-display tracking-tight">Khyber's Daily IT Flash</h2>
           <p className="text-sm text-cream/80 max-w-lg">
             Review, print, or export today's complete IT operational metrics, interface status logs, and shift handover notes.
           </p>

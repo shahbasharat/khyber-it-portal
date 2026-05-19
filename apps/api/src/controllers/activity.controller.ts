@@ -53,7 +53,7 @@ export const getActivityFeed = async (req: Request, res: Response) => {
       ...recentReports.map((r) => ({
         id: `rep-${r.id}`,
         type: "SHIFT_REPORT",
-        title: "Shift Handover Report Submitted",
+        title: "Khyber's Daily IT Flash Submitted",
         description: `Submitted by ${r.shift.user.name}`,
         timestamp: r.createdAt,
       })),
@@ -65,7 +65,7 @@ export const getActivityFeed = async (req: Request, res: Response) => {
     // Return the top 10 most recent activities
     res.json(activityFeed.slice(0, 10));
   } catch (error) {
-    logger.error({ error }, "Failed to fetch activity feed");
+    logger.error(error, "Failed to fetch activity feed");
     res.status(500).json({ error: "Failed to fetch activity feed" });
   }
 };
