@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspaces",
-    "build": "npm run build --workspaces",
-    "start": "npm run start --workspaces"
+    "build": "npm run build --workspace=packages/schemas && npm run build --workspace=apps/api",
+    "start": "npm run start --workspace=apps/api"
   }
 }
