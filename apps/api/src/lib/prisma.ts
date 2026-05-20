@@ -10,7 +10,7 @@ const cleanUrl = dbUrl.split("?")[0];
 
 const pool = new pg.Pool({
   connectionString: cleanUrl,
-  ssl: { rejectUnauthorized: false },
+  ssl: dbUrl.includes("rlwy.net") || dbUrl.includes("supabase.co") ? { rejectUnauthorized: false } : false,
   max: 10,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 10000,
