@@ -4,15 +4,19 @@ import pg from "pg";
 
 const dbUrl = process.env.DATABASE_URL || "";
 
-// Railway's public proxy always requires SSL with self-signed cert.
-// Strip any existing sslmode params and force the correct config via pool options.
-const cleanUrl = dbUrl.split("?")[0];
+// Add sslmode=no-verify via URL so the PrismaPg driver adapter correctly
+// picks up SSL configuration. Railway's postgres-ssl:18 uses a self-signed cert.
+let connectionString = dbUrl;
+try {
+  const url = new URL(dbUrl);
+  url.searchParams.set("sslmode", "no-verify");
+  connectionString = url.toString();
+} catch {
+  connectionString = dbUrl;
+}
 
-// Railway uses postgres-ssl:18 image which requires SSL on BOTH internal and external connections.
-// Always use SSL with rejectUnauthorized: false to support self-signed certs.
 const pool = new pg.Pool({
-  connectionString: cleanUrl,
-  ssl: { rejectUnauthorized: false },
+  connectionString,
   max: 10,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 10000,
