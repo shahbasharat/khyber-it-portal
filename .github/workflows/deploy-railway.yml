@@ -1,0 +1,23 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: curl -fsSL https://railway.app/install.sh | sh
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway link --project 6c5d5b60-c3e2-4a76-b87c-aaa9007ed073 --environment 93233b3f-06e1-4d09-a28d-339c4ac13cbf --service c6217be2-e607-492d-8eb7-85b086631fcf
+          railway up --detach
