@@ -81,9 +81,20 @@ app.get("/health", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({ status: "ok", db: "connected" });
-  } catch (error) {
+  } catch (error: any) {
     logger.error(error, "Health check failed");
-    res.status(500).json({ status: "error", db: "disconnected" });
+    
+    // Mask password in DATABASE_URL
+    const dbUrl = process.env.DATABASE_URL || "";
+    const maskedUrl = dbUrl.replace(/:[^:@\s]+@/, ":****@");
+
+    res.status(500).json({ 
+      status: "error", 
+      db: "disconnected",
+      errorMessage: error.message || String(error),
+      errorStack: error.stack,
+      databaseUrl: maskedUrl
+    });
   }
 });
 
