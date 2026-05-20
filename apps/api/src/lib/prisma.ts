@@ -8,9 +8,11 @@ const dbUrl = process.env.DATABASE_URL || "";
 // Strip any existing sslmode params and force the correct config via pool options.
 const cleanUrl = dbUrl.split("?")[0];
 
+// Railway uses postgres-ssl:18 image which requires SSL on BOTH internal and external connections.
+// Always use SSL with rejectUnauthorized: false to support self-signed certs.
 const pool = new pg.Pool({
   connectionString: cleanUrl,
-  ssl: dbUrl.includes("rlwy.net") || dbUrl.includes("supabase.co") ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 10000,
