@@ -76,6 +76,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/asset-activity", assetActivityRoutes);
 app.use("/api/escalations", escalationRoutes);
 
+// Trigger redeploy with correct DATABASE_URL
 // Health Check Endpoint
 app.get("/health", async (req, res) => {
   try {
