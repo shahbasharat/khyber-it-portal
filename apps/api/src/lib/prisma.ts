@@ -4,16 +4,13 @@ import pg from "pg";
 
 const dbUrl = process.env.DATABASE_URL || "";
 
-// For Railway's public proxy URL (rlwy.net), SSL is required with self-signed cert
-// Append sslmode=require if not already present and using external URL
-const isExternalUrl = dbUrl.includes("rlwy.net");
-const connectionString = isExternalUrl && !dbUrl.includes("sslmode")
-  ? `${dbUrl}?sslmode=require`
-  : dbUrl;
+// Railway's public proxy always requires SSL with self-signed cert.
+// Strip any existing sslmode params and force the correct config via pool options.
+const cleanUrl = dbUrl.split("?")[0];
 
 const pool = new pg.Pool({
-  connectionString,
-  ssl: isExternalUrl ? { rejectUnauthorized: false } : false,
+  connectionString: cleanUrl,
+  ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 10000,
