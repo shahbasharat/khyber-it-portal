@@ -67,7 +67,8 @@ export default function ServerRoomPage() {
   const fetchLogs = async () => {
     try {
       const response = await api.get("/server-room");
-      setLogs(response.data);
+      // Handle both paginated response and plain array
+      setLogs(Array.isArray(response.data) ? response.data : response.data.data || []);
     } catch (error) {
       console.error("Failed to fetch logs", error);
     } finally {
