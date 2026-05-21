@@ -2,21 +2,12 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
-const dbUrl = process.env.DATABASE_URL || "";
-
-// Add sslmode=no-verify via URL so the PrismaPg driver adapter correctly
-// picks up SSL configuration. Railway's postgres-ssl:18 uses a self-signed cert.
-let connectionString = dbUrl;
-try {
-  const url = new URL(dbUrl);
-  url.searchParams.set("sslmode", "no-verify");
-  connectionString = url.toString();
-} catch {
-  connectionString = dbUrl;
-}
+// Strip any query params from the URL — SSL is handled via pool options only
+const dbUrl = (process.env.DATABASE_URL || "").split("?")[0];
 
 const pool = new pg.Pool({
-  connectionString,
+  connectionString: dbUrl,
+  ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 10000,
