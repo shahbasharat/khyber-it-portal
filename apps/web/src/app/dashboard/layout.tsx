@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon, Key, MoreHorizontal } from "lucide-react";
+import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon, Key, MoreHorizontal, Wifi } from "lucide-react";
 import { api } from "@/lib/api";
 import { NotificationBell } from "@/app/components/NotificationBell";
 import { OfflineBanner } from "@/app/components/OfflineBanner";
@@ -107,6 +107,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Reports", href: "/dashboard/reports", icon: FileText },
     { name: "Escalations", href: "/dashboard/escalations", icon: AlertTriangle },
     { name: "Server Log", href: "/dashboard/server-room", icon: Package },
+    { name: "Guest Wi-Fi", href: "/dashboard/guest-wifi", icon: Wifi },
     ...(isManager ? [{ name: "Admin", href: "/dashboard/admin/users", icon: Settings }] : []),
   ];
 

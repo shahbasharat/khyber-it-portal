@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { AuthInitializer } from "@/app/components/AuthInitializer";
+import { ToastProvider } from "@/lib/toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,9 +26,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased min-h-screen bg-cream">
-        <AuthInitializer>
-          {children}
-        </AuthInitializer>
+        <ToastProvider>
+          <AuthInitializer>
+            {children}
+          </AuthInitializer>
+        </ToastProvider>
       </body>
     </html>
   );

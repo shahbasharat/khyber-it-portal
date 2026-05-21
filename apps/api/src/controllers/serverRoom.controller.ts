@@ -56,25 +56,42 @@ export const getServerHeartbeats = async (req: Request, res: Response) => {
       orderBy: { createdAt: "asc" }
     });
 
-    // NOTE: Latency values are simulated — no real ICMP/HTTP ping is performed.
-    // Status is always reported as ONLINE. This is a display-only feature.
-    const heartbeats = devices.map((device) => {
-      let latencyBase = 3;
-      if (device.category === "INTERNET") latencyBase = 18;
-      else if (device.category === "DATABASE") latencyBase = 4;
-      const latency = Math.floor(Math.random() * 8) + latencyBase;
+    // Perform real HTTP/TCP reachability checks for each device
+    const heartbeatPromises = devices.map(async (device) => {
+      const start = Date.now();
+      let status: "ONLINE" | "OFFLINE" = "OFFLINE";
+      let latency = 0;
+
+      try {
+        // Use a short-timeout fetch to check if the device responds
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+
+        // Try HTTP first, fall back gracefully
+        const url = device.ip.startsWith("http") ? device.ip : `http://${device.ip}`;
+        await fetch(url, { signal: controller.signal, method: "HEAD" });
+        clearTimeout(timeout);
+
+        latency = Date.now() - start;
+        status = "ONLINE";
+      } catch {
+        // Device didn't respond via HTTP — mark as offline
+        latency = Date.now() - start;
+        status = "OFFLINE";
+      }
 
       return {
         id: device.id,
         name: device.name,
         ip: device.ip,
         latency,
-        status: "SIMULATED",
+        status,
         uptime: device.uptime,
         category: device.category
       };
     });
 
+    const heartbeats = await Promise.all(heartbeatPromises);
     res.json(heartbeats);
   } catch (error) {
     logger.error(error, "Failed to fetch server heartbeats");

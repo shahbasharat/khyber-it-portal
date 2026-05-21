@@ -35,10 +35,18 @@ app.use(helmet({
 // Global Rate Limiting - Apply BEFORE routes
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 100,
   message: { error: "Too many requests, please try again later." },
 });
 app.use("/api", limiter);
+
+// Strict rate limit for login — 10 attempts per 15 minutes per IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many login attempts. Please try again in 15 minutes." },
+  skipSuccessfulRequests: true,
+});
 
 app.use(
   cors({
@@ -62,7 +70,8 @@ app.use(
   })
 );
 
-// Routes
+// Routes — login has its own strict rate limiter
+app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/issues", issueRoutes);
 app.use("/api/checklist", checklistRoutes);
