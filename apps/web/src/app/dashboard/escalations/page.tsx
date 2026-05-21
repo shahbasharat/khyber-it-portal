@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { AlertTriangle, Clock, CheckCircle2, Phone, Search } from "lucide-react";
 import Link from "next/link";
+import { useToast } from "@/lib/toast";
 
 interface Escalation {
   id: string;
@@ -27,6 +28,7 @@ export default function EscalationsPage() {
   const [escalations, setEscalations] = useState<Escalation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const { success, error } = useToast();
 
   const fetchEscalations = async () => {
     try {
@@ -46,9 +48,10 @@ export default function EscalationsPage() {
   const updateStatus = async (id: string, newStatus: string) => {
     try {
       await api.put(`/escalations/${id}/status`, { status: newStatus });
+      success(newStatus === "RESOLVED" ? "Escalation resolved" : "Ticket re-opened");
       fetchEscalations();
-    } catch (error) {
-      alert("Failed to update status");
+    } catch {
+      error("Failed to update status");
     }
   };
 

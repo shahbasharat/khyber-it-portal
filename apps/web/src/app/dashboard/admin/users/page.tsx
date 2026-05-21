@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/authStore";
 import { Trash2, UserPlus, Shield, User as UserIcon, Edit } from "lucide-react";
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
+import { useToast } from "@/lib/toast";
 
 interface User {
   id: string;
@@ -21,6 +22,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const currentUser = useAuthStore(state => state.user);
+  const { success, error: toastError } = useToast();
 
   // Edit User States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -44,10 +46,11 @@ export default function AdminUsersPage() {
       const data: any = { name: editName, role: editRole };
       if (editPassword) data.password = editPassword;
       await api.put(`/users/${editingUser.id}`, data);
+      success("User updated successfully");
       setIsEditModalOpen(false);
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to update user");
+      toastError(err.response?.data?.error || "Failed to update user");
     }
   };
 
@@ -71,26 +74,27 @@ export default function AdminUsersPage() {
   const onSubmit = async (data: any) => {
     try {
       await api.post("/users", data);
+      success("User created successfully");
       setIsModalOpen(false);
       reset();
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to create user");
+      toastError(err.response?.data?.error || "Failed to create user");
     }
   };
 
   const handleDelete = async (id: string) => {
     if (id === currentUser?.id) {
-      alert("You cannot delete your own account.");
+      toastError("You cannot delete your own account.");
       return;
     }
     if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
-
     try {
       await api.delete(`/users/${id}`);
+      success("User deleted");
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to delete user");
+      toastError(err.response?.data?.error || "Failed to delete user");
     }
   };
 

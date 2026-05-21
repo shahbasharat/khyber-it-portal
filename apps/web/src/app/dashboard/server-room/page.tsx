@@ -6,6 +6,7 @@ import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
 import { ClipboardList, Plus, Loader2, Clock, User as UserIcon, Activity, Wifi, Database, Tv, Lock, RefreshCw, Radio, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { useToast } from "@/lib/toast";
 
 interface LogEntry {
   id: string;
@@ -39,6 +40,7 @@ interface DeviceFormData {
 
 export default function ServerRoomPage() {
   const { user } = useAuthStore();
+  const { success, error } = useToast();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [heartbeats, setHeartbeats] = useState<Heartbeat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,12 +115,12 @@ export default function ServerRoomPage() {
     setIsAddingDevice(true);
     try {
       await api.post("/server-room/devices", data);
+      success("Device registered successfully");
       setIsDeviceModalOpen(false);
       resetDevice();
       fetchHeartbeats();
-    } catch (error) {
-      console.error("Failed to add network device", error);
-      alert("Failed to register device. Make sure the IP is unique.");
+    } catch {
+      error("Failed to register device. Make sure the IP is unique.");
     } finally {
       setIsAddingDevice(false);
     }
@@ -128,10 +130,10 @@ export default function ServerRoomPage() {
     if (!confirm("⚠️ Are you sure you want to remove this network device from the Heartbeat Console?")) return;
     try {
       await api.delete(`/server-room/devices/${id}`);
+      success("Device removed");
       fetchHeartbeats();
-    } catch (error) {
-      console.error("Failed to delete network device", error);
-      alert("Failed to remove network device.");
+    } catch {
+      error("Failed to remove network device.");
     }
   };
 

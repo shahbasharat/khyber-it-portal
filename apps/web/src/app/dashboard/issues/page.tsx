@@ -6,6 +6,7 @@ import { AlertCircle, Clock, CheckCircle, ArrowUpCircle, Plus, Loader2, User, Fi
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/store/authStore";
+import { useToast } from "@/lib/toast";
 
 type Priority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
@@ -53,6 +54,7 @@ interface DetailedIssue extends Issue {
 
 export default function IssuesPage() {
   const user = useAuthStore(state => state.user);
+  const { success, error: toastError, warning } = useToast();
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -155,7 +157,7 @@ export default function IssuesPage() {
     try {
       if (newStatus === "ESCALATED") {
         if (!escalatedTo) {
-          alert("Please enter who the issue is escalated to.");
+          warning("Missing info", "Please enter who the issue is escalated to.");
           setIsSaving(false);
           return;
         }
@@ -164,19 +166,18 @@ export default function IssuesPage() {
           contactDetails,
           remarks: escalationRemarks
         });
+        success("Issue escalated");
       } else {
         await api.patch(`/issues/${selectedIssue.id}`, {
           status: newStatus,
           resolutionNote: newStatus === "RESOLVED" ? resolutionNote : undefined
         });
+        success("Status updated");
       }
-      
-      // Refresh
       await fetchIssueDetail(selectedIssue.id);
       await fetchIssues();
-    } catch (error) {
-      console.error("Failed to update status", error);
-      alert("Failed to update status.");
+    } catch (err: any) {
+      toastError(err.response?.data?.error || "Failed to update status.");
     } finally {
       setIsSaving(false);
     }
@@ -191,10 +192,10 @@ export default function IssuesPage() {
         content: newNoteContent
       });
       setNewNoteContent("");
+      success("Note added");
       await fetchIssueDetail(selectedIssueId);
-    } catch (error) {
-      console.error("Failed to add note", error);
-      alert("Failed to add note.");
+    } catch {
+      toastError("Failed to add note.");
     } finally {
       setIsAddingNote(false);
     }

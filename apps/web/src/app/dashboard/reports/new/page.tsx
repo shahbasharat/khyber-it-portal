@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { ArrowLeft, Loader2, FileText } from "lucide-react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
+import { useToast } from "@/lib/toast";
 
 interface ReportFormData {
   content: string;
@@ -16,6 +17,7 @@ interface ReportFormData {
 
 export default function NewShiftReportPage() {
   const router = useRouter();
+  const { success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ReportFormData>({
@@ -28,10 +30,10 @@ export default function NewShiftReportPage() {
     setIsSubmitting(true);
     try {
       await api.post(`/reports`, data);
-      alert(`✓ Handover Report Submitted Successfully! A PDF copy has been emailed to ${data.recipientEmails || "itkhyber@gmail.com"}.`);
+      success("Handover Submitted!", `PDF report emailed to ${data.recipientEmails || "itkhyber@gmail.com"}`);
       router.push(`/dashboard/reports`);
-    } catch (error) {
-      console.error("Failed to submit shift report", error);
+    } catch (err: any) {
+      error("Submission Failed", err.response?.data?.error || "Please try again");
       setIsSubmitting(false);
     }
   };

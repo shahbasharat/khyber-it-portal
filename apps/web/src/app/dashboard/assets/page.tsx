@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Wrench, Plus, Search, Activity } from "lucide-react";
 import { Modal } from "@/app/components/Modal";
 import { useForm } from "react-hook-form";
+import { useToast } from "@/lib/toast";
 
 interface AssetActivity {
   id: string;
@@ -27,6 +28,7 @@ export default function AssetActivityPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { success, error } = useToast();
 
   const fetchActivities = async () => {
     try {
@@ -46,11 +48,12 @@ export default function AssetActivityPage() {
   const onSubmit = async (data: any) => {
     try {
       await api.post("/asset-activity", data);
+      success("Activity logged successfully");
       setIsModalOpen(false);
       reset();
       fetchActivities();
-    } catch (error) {
-      alert("Failed to log activity");
+    } catch {
+      error("Failed to log activity");
     }
   };
 

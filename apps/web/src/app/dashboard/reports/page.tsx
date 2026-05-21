@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { FileText, Download, Printer, Loader2, ClipboardCheck, AlertCircle, CheckCircle, Clock, Users, Flame, AlertTriangle, CheckCircle2, Activity, History, ChevronLeft, ChevronRight, User } from "lucide-react";
 import Link from "next/link";
 import { format, formatDistanceStrict } from "date-fns";
+import { useToast } from "@/lib/toast";
 
 interface ChecklistItem {
   id: string;
@@ -111,6 +112,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const { success, error, warning } = useToast();
 
   // History state
   const [history, setHistory] = useState<HistoryReport[]>([]);
@@ -157,8 +159,9 @@ export default function ReportsPage() {
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
+      success("PDF downloaded");
     } catch {
-      alert("Failed to download PDF.");
+      error("Failed to download PDF.");
     } finally {
       setExportingId(null);
     }
@@ -166,7 +169,7 @@ export default function ReportsPage() {
 
   const handleExportPDF = async () => {
     if (!data?.summary?.id) {
-      alert("No submitted report found for today yet! Please click 'Submit Handover' first to log today's shift report before exporting.");
+      warning("No report yet", "Submit a handover report first before exporting.");
       return;
     }
     setExporting(true);
@@ -183,9 +186,10 @@ export default function ReportsPage() {
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
-    } catch (error) {
-      console.error("Failed to download PDF", error);
-      alert("Failed to export branded PDF report.");
+      success("PDF exported successfully");
+    } catch (err) {
+      console.error("Failed to download PDF", err);
+      error("Failed to export PDF report.");
     } finally {
       setExporting(false);
     }
