@@ -18,6 +18,7 @@ import guestWifiRoutes from "./routes/guestWifi.routes";
 import userRoutes from "./routes/user.routes";
 import assetActivityRoutes from "./routes/assetActivity.routes";
 import escalationRoutes from "./routes/escalation.routes";
+import shiftRoutes from "./routes/shift.routes";
 import { initCronJobs } from "./jobs/cron";
 
 const app = express();
@@ -84,6 +85,7 @@ app.use("/api/guest-wifi", guestWifiRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/asset-activity", assetActivityRoutes);
 app.use("/api/escalations", escalationRoutes);
+app.use("/api/shifts", shiftRoutes);
 
 // Trigger redeploy with correct DATABASE_URL
 // Health Check Endpoint

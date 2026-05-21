@@ -4,11 +4,12 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon, Key, MoreHorizontal, Wifi } from "lucide-react";
+import { Home, CheckSquare, AlertCircle, FileText, Settings, LogOut, Package, Wrench, AlertTriangle, Sun, Moon, Key, MoreHorizontal, Wifi, PlayCircle, StopCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { NotificationBell } from "@/app/components/NotificationBell";
 import { OfflineBanner } from "@/app/components/OfflineBanner";
 import { Modal } from "@/app/components/Modal";
+import { useToast } from "@/lib/toast";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
@@ -18,6 +19,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { success, error: toastError } = useToast();
+
+  // Shift tracking state
+  const [activeShift, setActiveShift] = useState<{ id: string; startTime: string } | null>(null);
+  const [shiftLoading, setShiftLoading] = useState(false);
+
+  const fetchActiveShift = async () => {
+    try {
+      const res = await api.get("/shifts/active");
+      setActiveShift(res.data);
+    } catch {}
+  };
+
+  const handleStartShift = async () => {
+    setShiftLoading(true);
+    try {
+      const res = await api.post("/shifts/start");
+      setActiveShift(res.data);
+      success("Shift started", "Your shift is now active. Good luck!");
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        toastError("Shift already active", "You already have an ongoing shift.");
+      } else {
+        toastError("Failed to start shift");
+      }
+    } finally {
+      setShiftLoading(false);
+    }
+  };
 
   // Change Password States
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -67,6 +97,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push("/login");
       return;
     }
+
+    fetchActiveShift();
 
     // Initialize Theme Mode
     const savedTheme = localStorage.getItem("khyber-theme") as "light" | "dark" | null;
@@ -216,8 +248,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {navLinks.find((l) => pathname === l.href || (l.href !== "/dashboard" && pathname.startsWith(l.href)))?.name || "Portal"}
           </h1>
           <div className="flex items-center gap-4">
-            <button 
-              onClick={toggleTheme} 
+            {/* Shift Start Button - only for non-managers */}
+            {user.role !== "MANAGER" && user.role !== "VIEWER" && (
+              <button
+                onClick={handleStartShift}
+                disabled={shiftLoading || !!activeShift}
+                title={activeShift ? `Shift active since ${new Date(activeShift.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Start your shift"}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                  activeShift
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 cursor-default"
+                    : "bg-fir-green text-white border-fir-green hover:bg-fir-green/90"
+                } disabled:opacity-60`}
+              >
+                {activeShift ? (
+                  <><StopCircle size={13} /> On Shift</>
+                ) : (
+                  <><PlayCircle size={13} /> Start Shift</>
+                )}
+              </button>
+            )}
+            <button
+              onClick={toggleTheme}
               className="text-slate-mid hover:text-antique-gold transition-colors p-2 rounded-xl bg-cream border border-slate-border/20 hover:bg-slate-border/10 flex items-center justify-center shadow-sm"
               aria-label="Toggle theme"
             >
